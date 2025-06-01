@@ -39,7 +39,7 @@ export function Emma() {
               src="https://n8n.srv792766.hstgr.cloud/webhook/6ae82887-977b-4033-9855-08a96f0cd896/chat"
               className="w-full h-full border-0"
               title="Emma Notion Assistant"
-              sandbox="allow-same-origin allow-scripts allow-forms"
+              allow="microphone; camera; fullscreen"
             />
           </div>
         </CardContent>
