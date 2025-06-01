@@ -36,7 +36,7 @@ export function Emma() {
         <CardContent className="h-full p-6">
           <div className="w-full h-full bg-gray-50 rounded-lg border-2 border-dashed border-gray-300 overflow-hidden">
             <iframe
-              src="https://n8n.srv792766.hstgr.cloud/webhook/6ae82887-977b-4033-9855-08a96f0cd896/chat"
+              src="https://n8n.srv792766.hstgr.cloud/webhook/chat"
               className="w-full h-full border-0"
               title="Emma Notion Assistant"
               allow="microphone; camera; fullscreen"
