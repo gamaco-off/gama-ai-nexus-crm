@@ -5,8 +5,7 @@ import {
   Home, 
   Users, 
   Bot, 
-  Mail, 
-  Settings as SettingsIcon,
+  Mail,
   Sparkles 
 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -21,7 +20,6 @@ const navigationItems = [
   { id: "leadgen", label: "Leadgen", icon: Users },
   { id: "emma", label: "Emma", icon: Bot },
   { id: "email", label: "Email AI Agent", icon: Mail },
-  { id: "settings", label: "Settings", icon: SettingsIcon },
 ];
 
 export function AppSidebar({ activeTab, onTabChange }: AppSidebarProps) {

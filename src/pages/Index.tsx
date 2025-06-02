@@ -6,7 +6,6 @@ import { Dashboard } from "@/components/Dashboard";
 import { LeadGen } from "@/components/LeadGen";
 import { Emma } from "@/components/Emma";
 import { EmailAgent } from "@/components/EmailAgent";
-import { Settings } from "@/components/Settings";
 
 const Index = () => {
   const [activeTab, setActiveTab] = useState("home");
@@ -21,8 +20,6 @@ const Index = () => {
         return <Emma />;
       case "email":
         return <EmailAgent />;
-      case "settings":
-        return <Settings />;
       default:
         return <Dashboard />;
     }
