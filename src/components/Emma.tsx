@@ -1,97 +1,112 @@
 
 import { useEffect, useRef } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Bot } from "lucide-react";
+import { Bot, MessageSquare } from "lucide-react";
 
 export function Emma() {
   const chatContainerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    // Add the CSS for n8n chat
-    const link = document.createElement('link');
-    link.href = 'https://cdn.jsdelivr.net/npm/@n8n/chat/dist/style.css';
-    link.rel = 'stylesheet';
-    document.head.appendChild(link);
+    // Initialize the n8n chat widget using the CDN
+    const initializeChat = () => {
+      if (!chatContainerRef.current) return;
 
-    // Load and initialize the n8n chat
-    const loadChat = async () => {
-      try {
-        const { createChat } = await import('https://cdn.jsdelivr.net/npm/@n8n/chat/dist/chat.bundle.es.js');
+      // Clear any existing content
+      chatContainerRef.current.innerHTML = '';
+
+      // Create the chat container
+      const chatDiv = document.createElement('div');
+      chatDiv.id = 'n8n-chat';
+      chatDiv.style.height = '100%';
+      chatDiv.style.width = '100%';
+      chatContainerRef.current.appendChild(chatDiv);
+
+      // Load the CSS
+      const cssLink = document.createElement('link');
+      cssLink.href = 'https://cdn.jsdelivr.net/npm/@n8n/chat/dist/style.css';
+      cssLink.rel = 'stylesheet';
+      document.head.appendChild(cssLink);
+
+      // Load and initialize the chat script
+      const script = document.createElement('script');
+      script.type = 'module';
+      script.innerHTML = `
+        import { createChat } from 'https://cdn.jsdelivr.net/npm/@n8n/chat/dist/chat.bundle.es.js';
         
-        if (chatContainerRef.current) {
-          createChat({
-            webhookUrl: 'https://n8n.srv792766.hstgr.cloud/webhook/6ae82887-977b-4033-9855-08a96f0cd896/chat',
-            target: chatContainerRef.current,
-            mode: 'fullscreen',
-            loadPreviousSession: true,
-            chatInputPlaceholder: 'Ask Emma about your leads and sales data...',
-            chatSessionKey: 'emma-session',
-            defaultHeight: 600,
-            defaultWidth: '100%',
-            showWelcomeScreen: false,
-            initialMessages: [
-              "Hi! I'm Emma, your Notion AI assistant. I can help you manage your leads, search for information, and provide insights about your sales pipeline. What would you like to know?"
-            ]
-          });
-        }
-      } catch (error) {
-        console.error('Error loading n8n chat:', error);
-        if (chatContainerRef.current) {
-          chatContainerRef.current.innerHTML = `
-            <div class="flex items-center justify-center h-full">
-              <div class="text-center">
-                <div class="text-red-500 mb-4">
-                  <svg class="w-12 h-12 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.732-.833-2.5 0L4.268 19.5c-.77.833.192 2.5 1.732 2.5z"></path>
-                  </svg>
-                </div>
-                <h3 class="text-lg font-semibold text-gray-900 mb-2">Chat Unavailable</h3>
-                <p class="text-gray-600">Unable to load the chat interface. Please try refreshing the page.</p>
-              </div>
-            </div>
-          `;
-        }
-      }
+        createChat({
+          webhookUrl: 'https://n8n.srv792766.hstgr.cloud/webhook/6ae82887-977b-4033-9855-08a96f0cd896/chat',
+          target: '#n8n-chat',
+          mode: 'window',
+          loadPreviousSession: true,
+          chatSessionKey: 'gama-ai-chat',
+          chatWindowOptions: {
+            title: 'Emma - AI Assistant',
+            subtitle: 'Your Notion Database Assistant',
+            footer: ''
+          }
+        });
+      `;
+      document.body.appendChild(script);
     };
 
-    loadChat();
+    // Small delay to ensure DOM is ready
+    const timer = setTimeout(initializeChat, 100);
 
-    // Cleanup function
     return () => {
-      const existingLink = document.querySelector('link[href="https://cdn.jsdelivr.net/npm/@n8n/chat/dist/style.css"]');
-      if (existingLink) {
-        document.head.removeChild(existingLink);
-      }
+      clearTimeout(timer);
     };
   }, []);
 
   return (
-    <div className="p-6 space-y-6">
-      {/* Header */}
-      <div className="flex justify-between items-center">
-        <div>
-          <h1 className="text-3xl font-bold text-gray-900">Emma - Notion AI Assistant</h1>
-          <p className="text-gray-600 mt-1">Chat with Emma to manage your Notion database and leads intelligently.</p>
+    <div className="h-full bg-gray-50">
+      <div className="p-6 h-full flex flex-col">
+        {/* Header */}
+        <div className="mb-6">
+          <div className="flex items-center space-x-3 mb-4">
+            <div className="w-12 h-12 bg-gradient-to-br from-purple-600 to-blue-600 rounded-xl flex items-center justify-center">
+              <Bot className="w-7 h-7 text-white" />
+            </div>
+            <div>
+              <h1 className="text-3xl font-bold text-gray-900">Emma</h1>
+              <p className="text-gray-600">Your AI-powered Notion Database Assistant</p>
+            </div>
+          </div>
+          
+          <Card className="bg-gradient-to-r from-purple-50 to-blue-50 border-purple-200">
+            <CardContent className="p-4">
+              <div className="flex items-start space-x-3">
+                <MessageSquare className="w-5 h-5 text-purple-600 mt-0.5" />
+                <div>
+                  <h3 className="font-semibold text-purple-900 mb-1">What can Emma help you with?</h3>
+                  <ul className="text-sm text-purple-700 space-y-1">
+                    <li>• Search and manage your leads in Notion</li>
+                    <li>• Get insights about your sales pipeline</li>
+                    <li>• Answer questions about lead data and statistics</li>
+                    <li>• Help with lead management tasks</li>
+                  </ul>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
         </div>
-      </div>
 
-      {/* Chat Interface */}
-      <Card className="h-[700px] flex flex-col">
-        <CardHeader>
-          <CardTitle className="flex items-center">
-            <Bot className="w-5 h-5 mr-2 text-purple-600" />
-            Chat with Emma
-          </CardTitle>
-          <p className="text-gray-600">Ask Emma to help you manage your Notion leads, create entries, or analyze your data.</p>
-        </CardHeader>
-        <CardContent className="flex-1 p-0">
-          <div 
-            ref={chatContainerRef}
-            className="w-full h-full min-h-[600px]"
-            style={{ minHeight: '600px' }}
-          />
-        </CardContent>
-      </Card>
+        {/* Chat Container */}
+        <Card className="flex-1 flex flex-col">
+          <CardHeader className="pb-3">
+            <CardTitle className="flex items-center text-lg">
+              <MessageSquare className="w-5 h-5 mr-2 text-purple-600" />
+              Chat with Emma
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="flex-1 p-0">
+            <div 
+              ref={chatContainerRef}
+              className="h-full w-full"
+              style={{ minHeight: '500px' }}
+            />
+          </CardContent>
+        </Card>
+      </div>
     </div>
   );
 }
