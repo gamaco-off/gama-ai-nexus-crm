@@ -4,9 +4,7 @@ import { useNavigate } from "react-router-dom";
 import { SidebarProvider } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/AppSidebar";
 import { Dashboard } from "@/components/Dashboard";
-import { LeadGen } from "@/components/LeadGen";
 import { Emma } from "@/components/Emma";
-import { EmailAgent } from "@/components/EmailAgent";
 import { Settings } from "@/components/Settings";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
@@ -43,12 +41,8 @@ const Index = () => {
     switch (activeTab) {
       case "home":
         return <Dashboard />;
-      case "leadgen":
-        return <LeadGen />;
       case "emma":
         return <Emma />;
-      case "email":
-        return <EmailAgent />;
       case "settings":
         return <Settings />;
       default:
@@ -69,9 +63,7 @@ const Index = () => {
           <div className="sticky top-0 z-10 bg-white border-b border-gray-200 p-4">
             <div className="flex items-center justify-between">
               <h2 className="text-xl font-semibold text-gray-900 capitalize">
-                {activeTab === "leadgen" ? "Lead Generation" : 
-                 activeTab === "emma" ? "Emma AI" :
-                 activeTab === "email" ? "Email Agent" : activeTab}
+                {activeTab === "emma" ? "Emma AI" : activeTab}
               </h2>
               <div className="flex items-center space-x-4">
                 <CreditsDisplay />

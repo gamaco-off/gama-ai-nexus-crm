@@ -1,5 +1,5 @@
 
-import { Bot, Home, Users, MessageSquare, Mail, Settings } from "lucide-react";
+import { Bot, Home, Users, Settings } from "lucide-react";
 import {
   Sidebar,
   SidebarContent,
@@ -20,11 +20,14 @@ const menuItems = [
   { id: "home", label: "Dashboard", icon: Home },
   { id: "leadgen", label: "Lead Generation", icon: Users },
   { id: "emma", label: "Emma AI", icon: Bot },
-  { id: "email", label: "Email Agent", icon: Mail },
   { id: "settings", label: "Settings", icon: Settings },
 ];
 
 export function AppSidebar({ activeTab, onTabChange }: AppSidebarProps) {
+  const handleLeadGenClick = () => {
+    window.open('https://gamaai-app.streamlit.app/lead_generation', '_blank');
+  };
+
   return (
     <Sidebar>
       <SidebarContent>
@@ -37,8 +40,8 @@ export function AppSidebar({ activeTab, onTabChange }: AppSidebarProps) {
               {menuItems.map((item) => (
                 <SidebarMenuItem key={item.id}>
                   <SidebarMenuButton
-                    onClick={() => onTabChange(item.id)}
-                    isActive={activeTab === item.id}
+                    onClick={() => item.id === 'leadgen' ? handleLeadGenClick() : onTabChange(item.id)}
+                    isActive={activeTab === item.id && item.id !== 'leadgen'}
                     className="w-full justify-start"
                   >
                     <item.icon className="mr-2 h-4 w-4" />

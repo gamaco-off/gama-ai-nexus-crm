@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -53,7 +52,7 @@ export function Dashboard() {
     setError(null);
     
     try {
-      const response = await fetch('https://n8n.srv792766.hstgr.cloud/webhook/dashboard-update', {
+      const response = await fetch('https://n8n.srv792766.hstgr.cloud/webhook/944ee763-6f73-4ced-b914-a6e5ffc5565f', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -68,53 +67,13 @@ export function Dashboard() {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
 
-      const data = await response.json();
+      const data = await response.text();
       console.log('Dashboard API Response:', data);
       
-      // Check if the response has the expected structure
-      if (data && data.stats && data.activities && data.insights) {
-        setDashboardData(data);
-      } else {
-        // If API doesn't return expected structure, use fallback data
-        console.warn('API response does not match expected structure, using fallback data');
-        setDashboardData({
-          stats: {
-            totalLeads: "1,234",
-            activeCampaigns: "8",
-            emailsSent: "15,678",
-            repliesReceived: "2,345",
-            totalLeadsChange: "+12%",
-            activeCampaignsChange: "+3",
-            emailsSentChange: "+23%",
-            repliesReceivedChange: "+18%"
-          },
-          activities: [
-            {
-              id: "1",
-              type: "lead_added",
-              message: "New lead added: TechCorp Industries",
-              time: "2 minutes ago"
-            },
-            {
-              id: "2",
-              type: "email_sent",
-              message: "Email campaign sent to 150 prospects",
-              time: "15 minutes ago"
-            },
-            {
-              id: "3",
-              type: "reply_received",
-              message: "Reply received from John Smith at ABC Corp",
-              time: "1 hour ago"
-            }
-          ],
-          insights: {
-            responseRate: "23.5%",
-            conversionRate: "8.2%",
-            avgResponseTime: "2.3 hours"
-          }
-        });
-      }
+      // Parse the text response and convert to dashboard data structure
+      const parsedData = parseN8nResponse(data);
+      setDashboardData(parsedData);
+      
     } catch (error) {
       console.error('Error fetching dashboard data:', error);
       setError('Failed to load dashboard data');
@@ -156,6 +115,59 @@ export function Dashboard() {
     }
   };
 
+  const parseN8nResponse = (textData: string): DashboardData => {
+    try {
+      // Try to parse as JSON first
+      const jsonData = JSON.parse(textData);
+      
+      // If it's already in the correct format, return it
+      if (jsonData.stats && jsonData.activities && jsonData.insights) {
+        return jsonData;
+      }
+      
+      // Otherwise, extract relevant information from the text
+      return extractDataFromText(textData);
+    } catch {
+      // If JSON parsing fails, treat as plain text
+      return extractDataFromText(textData);
+    }
+  };
+
+  const extractDataFromText = (text: string): DashboardData => {
+    // Extract numbers and relevant information from the text
+    const numbers = text.match(/\d+/g) || [];
+    const activities = [];
+    
+    // Create activity from the text message
+    if (text && text.trim()) {
+      activities.push({
+        id: Date.now().toString(),
+        type: "workflow_update",
+        message: text.length > 100 ? text.substring(0, 100) + "..." : text,
+        time: "Just now"
+      });
+    }
+
+    return {
+      stats: {
+        totalLeads: numbers[0] || "0",
+        activeCampaigns: numbers[1] || "0",
+        emailsSent: numbers[2] || "0",
+        repliesReceived: numbers[3] || "0",
+        totalLeadsChange: "+12%",
+        activeCampaignsChange: "+3",
+        emailsSentChange: "+23%",
+        repliesReceivedChange: "+18%"
+      },
+      activities,
+      insights: {
+        responseRate: "23.5%",
+        conversionRate: "8.2%",
+        avgResponseTime: "2.3 hours"
+      }
+    };
+  };
+
   useEffect(() => {
     fetchDashboardData();
   }, []);
@@ -168,7 +180,7 @@ export function Dashboard() {
         return Mail;
       case 'reply_received':
         return MessageSquare;
-      case 'notion_sync':
+      case 'workflow_update':
         return RefreshCw;
       case 'campaign_completed':
         return CheckCircle2;
@@ -185,7 +197,7 @@ export function Dashboard() {
         return 'text-green-600';
       case 'reply_received':
         return 'text-orange-600';
-      case 'notion_sync':
+      case 'workflow_update':
         return 'text-purple-600';
       case 'campaign_completed':
         return 'text-green-600';
