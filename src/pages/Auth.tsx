@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -14,6 +13,7 @@ export default function Auth() {
   const [isLoading, setIsLoading] = useState(false);
   const [loginData, setLoginData] = useState({ email: '', password: '' });
   const [signupData, setSignupData] = useState({ email: '', password: '', fullName: '' });
+  const [activeTab, setActiveTab] = useState('login');
   const { signIn, signUp } = useAuth();
   const { toast } = useToast();
   const navigate = useNavigate();
@@ -47,11 +47,22 @@ export default function Auth() {
     const { error } = await signUp(signupData.email, signupData.password, signupData.fullName);
     
     if (error) {
-      toast({
-        title: "Signup Failed",
-        description: error.message,
-        variant: "destructive"
-      });
+      if (error.message === 'Email already exists') {
+        toast({
+          title: "Email Already Exists",
+          description: "This email is already registered. Please try logging in instead.",
+          variant: "destructive"
+        });
+        // Switch to login tab and pre-fill email
+        setLoginData({ ...loginData, email: signupData.email });
+        setActiveTab('login');
+      } else {
+        toast({
+          title: "Signup Failed",
+          description: error.message,
+          variant: "destructive"
+        });
+      }
     } else {
       toast({
         title: "Account Created!",
@@ -82,7 +93,7 @@ export default function Auth() {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <Tabs defaultValue="login" className="space-y-4">
+            <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
               <TabsList className="grid w-full grid-cols-2">
                 <TabsTrigger value="login">Login</TabsTrigger>
                 <TabsTrigger value="signup">Sign Up</TabsTrigger>
