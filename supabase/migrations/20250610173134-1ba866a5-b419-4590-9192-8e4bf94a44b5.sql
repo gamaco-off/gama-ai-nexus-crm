@@ -2,7 +2,7 @@
 -- Create a profiles table to store user information
 CREATE TABLE public.profiles (
   id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE PRIMARY KEY,
-  email TEXT,
+  email TEXT UNIQUE,
   full_name TEXT,
   credits INTEGER NOT NULL DEFAULT 100,
   created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now(),

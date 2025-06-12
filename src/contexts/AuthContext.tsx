@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
@@ -73,19 +72,34 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, []);
 
   const signUp = async (email: string, password: string, fullName: string) => {
-    const redirectUrl = `${window.location.origin}/`;
-    
-    const { error } = await supabase.auth.signUp({
-      email,
-      password,
-      options: {
-        emailRedirectTo: redirectUrl,
-        data: {
-          full_name: fullName
-        }
+    try {
+      // First try to sign in with the email to check if it exists
+      const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
+        email,
+        password: 'dummy-password-for-check'
+      });
+
+      // If we get a specific error about invalid credentials, it means the email exists
+      if (signInError?.message?.includes('Invalid login credentials')) {
+        return { error: { message: 'Email already exists' } };
       }
-    });
-    return { error };
+
+      // If we get here, the email doesn't exist, so proceed with signup
+      const redirectUrl = `${window.location.origin}/`;
+      const { error } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          emailRedirectTo: redirectUrl,
+          data: {
+            full_name: fullName
+          }
+        }
+      });
+      return { error };
+    } catch (error) {
+      return { error };
+    }
   };
 
   const signIn = async (email: string, password: string) => {
