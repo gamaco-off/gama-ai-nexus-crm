@@ -1,4 +1,3 @@
-
 import { Bot, Home, Users, Settings } from "lucide-react";
 import {
   Sidebar,
@@ -24,10 +23,6 @@ const menuItems = [
 ];
 
 export function AppSidebar({ activeTab, onTabChange }: AppSidebarProps) {
-  const handleLeadGenClick = () => {
-    window.open('https://gamaai-app.streamlit.app/lead_generation', '_blank');
-  };
-
   return (
     <Sidebar>
       <SidebarContent>
@@ -40,8 +35,8 @@ export function AppSidebar({ activeTab, onTabChange }: AppSidebarProps) {
               {menuItems.map((item) => (
                 <SidebarMenuItem key={item.id}>
                   <SidebarMenuButton
-                    onClick={() => item.id === 'leadgen' ? handleLeadGenClick() : onTabChange(item.id)}
-                    isActive={activeTab === item.id && item.id !== 'leadgen'}
+                    onClick={() => onTabChange(item.id)}
+                    isActive={activeTab === item.id}
                     className="w-full justify-start"
                   >
                     <item.icon className="mr-2 h-4 w-4" />
