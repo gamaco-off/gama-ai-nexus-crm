@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
 import { 
   Users, 
   Mail, 
@@ -13,7 +14,8 @@ import {
   Clock,
   CheckCircle2,
   AlertCircle,
-  Loader2
+  Loader2,
+  X
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
@@ -45,6 +47,14 @@ export function Dashboard() {
   const [dashboardData, setDashboardData] = useState<DashboardData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [showAddLeadForm, setShowAddLeadForm] = useState(false);
+  const [isSubmittingLead, setIsSubmittingLead] = useState(false);
+  const [leadForm, setLeadForm] = useState({
+    name: '',
+    email: '',
+    company: '',
+    phone: ''
+  });
   const { toast } = useToast();
 
   const fetchDashboardData = async () => {
@@ -168,6 +178,62 @@ export function Dashboard() {
     };
   };
 
+  const handleAddLead = async () => {
+    if (!leadForm.name || !leadForm.email) {
+      toast({
+        title: "Error",
+        description: "Name and email are required fields.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsSubmittingLead(true);
+    
+    try {
+      const response = await fetch('https://n8n.srv792766.hstgr.cloud/webhook/b4e3710b-f974-43c6-8fac-9edc0a1f72e7', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          action: 'add_lead',
+          data: leadForm,
+          timestamp: new Date().toISOString(),
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const result = await response.text();
+      console.log('Add Lead Response:', result);
+
+      toast({
+        title: "Success",
+        description: "Lead added successfully!",
+      });
+
+      // Reset form and close modal
+      setLeadForm({ name: '', email: '', company: '', phone: '' });
+      setShowAddLeadForm(false);
+      
+      // Refresh dashboard data
+      fetchDashboardData();
+      
+    } catch (error) {
+      console.error('Error adding lead:', error);
+      toast({
+        title: "Error",
+        description: "Failed to add lead. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSubmittingLead(false);
+    }
+  };
+
   useEffect(() => {
     fetchDashboardData();
   }, []);
@@ -261,7 +327,10 @@ export function Dashboard() {
           <p className="text-gray-600 mt-1">Welcome back! Here's what's happening with your sales.</p>
         </div>
         <div className="flex space-x-3">
-          <Button className="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700">
+          <Button 
+            className="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700"
+            onClick={() => setShowAddLeadForm(true)}
+          >
             <Plus className="w-4 h-4 mr-2" />
             Add Lead
           </Button>
@@ -275,6 +344,95 @@ export function Dashboard() {
           </Button>
         </div>
       </div>
+
+      {/* Add Lead Form Modal */}
+      {showAddLeadForm && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 w-full max-w-md">
+            <div className="flex justify-between items-center mb-4">
+              <h2 className="text-xl font-bold">Add New Lead</h2>
+              <Button 
+                variant="ghost" 
+                size="sm"
+                onClick={() => setShowAddLeadForm(false)}
+              >
+                <X className="w-4 h-4" />
+              </Button>
+            </div>
+            
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Name *
+                </label>
+                <Input
+                  value={leadForm.name}
+                  onChange={(e) => setLeadForm(prev => ({ ...prev, name: e.target.value }))}
+                  placeholder="Enter lead name"
+                />
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Email *
+                </label>
+                <Input
+                  type="email"
+                  value={leadForm.email}
+                  onChange={(e) => setLeadForm(prev => ({ ...prev, email: e.target.value }))}
+                  placeholder="Enter email address"
+                />
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Company
+                </label>
+                <Input
+                  value={leadForm.company}
+                  onChange={(e) => setLeadForm(prev => ({ ...prev, company: e.target.value }))}
+                  placeholder="Enter company name"
+                />
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Phone
+                </label>
+                <Input
+                  value={leadForm.phone}
+                  onChange={(e) => setLeadForm(prev => ({ ...prev, phone: e.target.value }))}
+                  placeholder="Enter phone number"
+                />
+              </div>
+              
+              <div className="flex space-x-3 pt-4">
+                <Button 
+                  onClick={handleAddLead}
+                  disabled={isSubmittingLead}
+                  className="flex-1"
+                >
+                  {isSubmittingLead ? (
+                    <>
+                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                      Adding...
+                    </>
+                  ) : (
+                    'Add Lead'
+                  )}
+                </Button>
+                <Button 
+                  variant="outline" 
+                  onClick={() => setShowAddLeadForm(false)}
+                  className="flex-1"
+                >
+                  Cancel
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Stats Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
