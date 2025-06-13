@@ -1,10 +1,13 @@
-
 import { useEffect, useRef } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Bot, MessageSquare } from "lucide-react";
+import { useCredits } from "@/hooks/useCredits";
+import { useToast } from "@/components/ui/use-toast";
 
 export function Emma() {
   const chatContainerRef = useRef<HTMLDivElement>(null);
+  const { credits, deductCredits, isLoading } = useCredits();
+  const { toast } = useToast();
 
   useEffect(() => {
     // Initialize the n8n chat widget using the CDN
@@ -33,7 +36,7 @@ export function Emma() {
       script.innerHTML = `
         import { createChat } from 'https://cdn.jsdelivr.net/npm/@n8n/chat/dist/chat.bundle.es.js';
         
-        createChat({
+        const chat = createChat({
           webhookUrl: 'https://n8n.srv792766.hstgr.cloud/webhook/6ae82887-977b-4033-9855-08a96f0cd896/chat',
           target: '#n8n-chat',
           mode: 'window',
@@ -45,17 +48,97 @@ export function Emma() {
             footer: ''
           }
         });
+
+        // Add event listeners for message events
+        chat.on('message:sent', async (message) => {
+          console.log('Message sent event triggered');
+          // Check if user has enough credits
+          const currentCredits = ${credits?.amount ?? 0};
+          console.log('Current credits before sending message:', currentCredits);
+          
+          if (currentCredits < 2) {
+            console.log('Insufficient credits:', currentCredits);
+            window.dispatchEvent(new CustomEvent('insufficient-credits'));
+            return false;
+          }
+          
+          // Deduct credits immediately when message is sent
+          window.dispatchEvent(new CustomEvent('deduct-credits'));
+          console.log('Sufficient credits, proceeding with message');
+          return true;
+        });
+
+        chat.on('error', (error) => {
+          console.error('Chat error:', error);
+        });
       `;
       document.body.appendChild(script);
+
+      // Listen for insufficient credits event
+      const handleInsufficientCredits = () => {
+        console.log('Handling insufficient credits event');
+        toast({
+          title: "Insufficient Credits",
+          description: "You need at least 2 credits to send a message. Please add more credits to continue chatting.",
+          variant: "destructive"
+        });
+      };
+
+      // Listen for deduct credits event
+      const handleDeductCredits = async () => {
+        try {
+          console.log('Starting credit deduction process');
+          console.log('Current credits before deduction:', credits?.amount);
+          
+          const result = await deductCredits.mutateAsync({
+            amount: 2,
+            description: 'Chat message with Emma'
+          });
+          
+          console.log('Credit deduction result:', result);
+          console.log('New credit amount:', result.amount);
+          
+          toast({
+            title: "Credits Deducted",
+            description: `2 credits have been deducted. Remaining credits: ${result.amount}`,
+          });
+        } catch (error) {
+          console.error('Error in credit deduction:', error);
+          toast({
+            title: "Error",
+            description: "Failed to deduct credits. Please try again.",
+            variant: "destructive"
+          });
+        }
+      };
+
+      // Add event listeners
+      window.addEventListener('insufficient-credits', handleInsufficientCredits);
+      window.addEventListener('deduct-credits', handleDeductCredits);
+
+      // Cleanup function
+      return () => {
+        window.removeEventListener('insufficient-credits', handleInsufficientCredits);
+        window.removeEventListener('deduct-credits', handleDeductCredits);
+      };
     };
 
-    // Small delay to ensure DOM is ready
+    // Initialize chat with a small delay
     const timer = setTimeout(initializeChat, 100);
 
     return () => {
       clearTimeout(timer);
     };
-  }, []);
+  }, [credits, deductCredits, toast]);
+
+  // Show loading state while credits are being fetched
+  if (isLoading) {
+    return (
+      <div className="h-full bg-gray-50 flex items-center justify-center">
+        <div className="text-gray-500">Loading chat...</div>
+      </div>
+    );
+  }
 
   return (
     <div className="h-full bg-gray-50">
