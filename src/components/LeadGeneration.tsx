@@ -33,7 +33,7 @@ export function LeadGeneration() {
     setError(null);
 
     try {
-      const response = await fetch("https://n8n.srv792766.hstgr.cloud/webhook/b4e3710b-f974-43c6-8fac-9edc0a1f72e7", {
+      const response = await fetch("https://n8n.srv792766.hstgr.cloud/webhook/workflow/LeadGen", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
