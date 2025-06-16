@@ -36,7 +36,7 @@ export function Emma() {
         createChat({
           webhookUrl: 'https://n8n.srv792766.hstgr.cloud/webhook/6ae82887-977b-4033-9855-08a96f0cd896/chat',
           target: '#n8n-chat',
-          mode: 'window',
+          mode: 'fullscreen',
           loadPreviousSession: true,
           chatSessionKey: 'gama-ai-chat',
           chatWindowOptions: {
@@ -98,10 +98,10 @@ export function Emma() {
               Chat with Emma
             </CardTitle>
           </CardHeader>
-          <CardContent className="flex-1 p-0">
+          <CardContent className="flex-1 p-4">
             <div 
               ref={chatContainerRef}
-              className="h-full w-full"
+              className="h-full w-full rounded-lg border bg-white"
               style={{ minHeight: '500px' }}
             />
           </CardContent>
