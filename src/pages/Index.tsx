@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { SidebarProvider } from "@/components/ui/sidebar";
@@ -6,6 +5,7 @@ import { AppSidebar } from "@/components/AppSidebar";
 import { Dashboard } from "@/components/Dashboard";
 import { Emma } from "@/components/Emma";
 import { Settings } from "@/components/Settings";
+import { LeadGeneration } from "@/components/LeadGeneration";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { CreditsDisplay } from "@/components/CreditsDisplay";
@@ -41,6 +41,8 @@ const Index = () => {
     switch (activeTab) {
       case "home":
         return <Dashboard />;
+      case "leadgen":
+        return <LeadGeneration />;
       case "emma":
         return <Emma />;
       case "settings":
