@@ -6,6 +6,7 @@ import { Dashboard } from "@/components/Dashboard";
 import { Emma } from "@/components/Emma";
 import { Settings } from "@/components/Settings";
 import { LeadGeneration } from "@/components/LeadGeneration";
+import { PricingPage } from "@/components/Pricing";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { CreditsDisplay } from "@/components/CreditsDisplay";
@@ -45,6 +46,8 @@ const Index = () => {
         return <LeadGeneration />;
       case "emma":
         return <Emma />;
+      case "pricing":
+        return <PricingPage />;
       case "settings":
         return <Settings />;
       default:

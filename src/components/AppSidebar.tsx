@@ -1,4 +1,4 @@
-import { Bot, Home, Users, Settings } from "lucide-react";
+import { Bot, Home, Users, Settings, Tag } from "lucide-react";
 import {
   Sidebar,
   SidebarContent,
@@ -19,6 +19,7 @@ const menuItems = [
   { id: "home", label: "Dashboard", icon: Home },
   { id: "leadgen", label: "Lead Generation", icon: Users },
   { id: "emma", label: "Emma AI", icon: Bot },
+  { id: "pricing", label: "Pricing", icon: Tag },
   { id: "settings", label: "Settings", icon: Settings },
 ];
 
