@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Plus, Play, RefreshCw, Loader2 } from "lucide-react";
@@ -8,6 +7,7 @@ import { ActivityFeed } from "./dashboard/ActivityFeed";
 import { QuickInsights } from "./dashboard/QuickInsights";
 import { AddLeadModal } from "./dashboard/AddLeadModal";
 import { parseN8nResponse, getFallbackDashboardData } from "@/utils/dashboardUtils";
+import { useAuth } from "@/contexts/AuthContext";
 
 interface DashboardData {
   stats: {
@@ -39,6 +39,7 @@ export function Dashboard() {
   const [error, setError] = useState<string | null>(null);
   const [showAddLeadForm, setShowAddLeadForm] = useState(false);
   const { toast } = useToast();
+  const { profile, loading, session, user } = useAuth();
 
   const fetchDashboardData = async () => {
     setIsLoading(true);
@@ -92,7 +93,9 @@ export function Dashboard() {
     fetchDashboardData();
   };
 
-  if (isLoading) {
+  let displayName = session?.user?.user_metadata?.full_name || profile?.full_name || user?.email || '';
+
+  if (isLoading || loading) {
     return (
       <div className="p-6 space-y-6">
         <div className="flex justify-center items-center min-h-[400px]">
@@ -102,13 +105,21 @@ export function Dashboard() {
     );
   }
 
+  console.log('Dashboard profile:', profile);
+
   return (
     <div className="p-6 space-y-6">
+      {/* Welcome User */}
+      <div className="mb-2">
+        <h2 className="text-2xl font-semibold text-gray-800">
+          Welcome{displayName ? `, ${displayName}` : ''}!
+        </h2>
+      </div>
       {/* Header */}
       <div className="flex justify-between items-center">
         <div>
           <h1 className="text-3xl font-bold text-gray-900">Dashboard</h1>
-          <p className="text-gray-600 mt-1">Welcome back! Here's what's happening with your sales.</p>
+          <p className="text-gray-600 mt-1">Here's what's happening with your sales.</p>
         </div>
         <div className="flex space-x-3">
           <Button 

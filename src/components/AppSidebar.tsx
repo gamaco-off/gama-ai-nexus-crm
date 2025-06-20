@@ -1,4 +1,4 @@
-import { Bot, Home, Users, Settings, Tag } from "lucide-react";
+import { Bot, Home, Users, Settings, Tag, User } from "lucide-react";
 import {
   Sidebar,
   SidebarContent,
@@ -13,6 +13,7 @@ import {
 interface AppSidebarProps {
   activeTab: string;
   onTabChange: (tab: string) => void;
+  onProfileClick: () => void;
 }
 
 const menuItems = [
@@ -23,13 +24,21 @@ const menuItems = [
   { id: "settings", label: "Settings", icon: Settings },
 ];
 
-export function AppSidebar({ activeTab, onTabChange }: AppSidebarProps) {
+export function AppSidebar({ activeTab, onTabChange, onProfileClick }: AppSidebarProps) {
   return (
     <Sidebar>
       <SidebarContent>
         <SidebarGroup>
-          <SidebarGroupLabel className="text-lg font-bold text-purple-700">
+          <SidebarGroupLabel className="text-lg font-bold text-purple-700 flex items-center justify-between">
             Gama AI
+            <button
+              onClick={onProfileClick}
+              className="ml-2 p-1 rounded-full hover:bg-purple-100 focus:outline-none"
+              title="Profile"
+              type="button"
+            >
+              <User className="w-5 h-5 text-purple-700" />
+            </button>
           </SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
