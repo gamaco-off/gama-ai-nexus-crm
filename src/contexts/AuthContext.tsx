@@ -30,11 +30,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const refreshProfile = async () => {
     if (user) {
-      const { data } = await supabase
+      const { data, error } = await supabase
         .from('profiles')
-        .select('*')
+        .select('id, credits')
         .eq('id', user.id)
         .single();
+      console.log('Fetched profile:', data, 'Error:', error, 'User:', user);
       setProfile(data);
     }
   };
@@ -62,6 +63,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setSession(session);
       setUser(session?.user ?? null);
       if (session?.user) {
+        console.log('Session user:', session.user);
         refreshProfile();
       }
       setLoading(false);
