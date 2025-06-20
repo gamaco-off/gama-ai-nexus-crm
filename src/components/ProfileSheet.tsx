@@ -28,23 +28,6 @@ export const ProfileSheet: React.FC<ProfileSheetProps> = ({ open, onOpenChange }
     setSuccess(false);
     setLoading(true);
     try {
-      // Update full_name in profiles table
-      if (fullName !== profile?.full_name) {
-        const { error: updateError, count } = await supabase
-          .from('profiles')
-          .update({ full_name: fullName })
-          .eq('id', user?.id)
-          .select('id', { count: 'exact' });
-        if (updateError) throw updateError;
-        // If no row was updated, insert new profile
-        if (count === 0) {
-          const { error: insertError } = await supabase
-            .from('profiles')
-            .insert({ id: user?.id, full_name: fullName, email: user?.email })
-          if (insertError) throw insertError;
-        }
-        await refreshProfile();
-      }
       // Update password if provided
       if (password) {
         if (password !== confirmPassword) {
