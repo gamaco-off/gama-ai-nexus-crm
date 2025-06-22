@@ -33,7 +33,7 @@ export function LeadGeneration() {
     setError(null);
 
     try {
-      const response = await fetch("https://n8n.srv792766.hstgr.cloud/webhook/workflow/LeadGen", {
+      const response = await fetch("https://n8n.gama-app.com/webhook/workflow/LeadGen", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -68,7 +68,7 @@ export function LeadGeneration() {
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="space-y-2">
-            <Label htmlFor="bussinus">Company Name</Label>
+            <Label htmlFor="bussinus">Industry</Label>
             <Input
               id="bussinus"
               placeholder="e.g. G2C Grill 2 Chill"
