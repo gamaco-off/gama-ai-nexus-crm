@@ -11,11 +11,13 @@ import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { CreditsDisplay } from "@/components/CreditsDisplay";
 import { LogOut } from "lucide-react";
+import { ProfileSheet } from "@/components/ProfileSheet";
 
 const Index = () => {
   const [activeTab, setActiveTab] = useState("home");
   const { user, loading, signOut } = useAuth();
   const navigate = useNavigate();
+  const [profileOpen, setProfileOpen] = useState(false);
 
   useEffect(() => {
     if (!loading && !user) {
@@ -63,7 +65,7 @@ const Index = () => {
   return (
     <SidebarProvider>
       <div className="flex h-screen w-full bg-gray-50">
-        <AppSidebar activeTab={activeTab} onTabChange={setActiveTab} />
+        <AppSidebar activeTab={activeTab} onTabChange={setActiveTab} onProfileClick={() => setProfileOpen(true)} />
         <main className="flex-1 overflow-auto">
           <div className="sticky top-0 z-10 bg-white border-b border-gray-200 p-4">
             <div className="flex items-center justify-between">
@@ -88,6 +90,7 @@ const Index = () => {
             {renderContent()}
           </div>
         </main>
+        <ProfileSheet open={profileOpen} onOpenChange={setProfileOpen} />
       </div>
     </SidebarProvider>
   );
