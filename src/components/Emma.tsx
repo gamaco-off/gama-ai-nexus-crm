@@ -1,3 +1,4 @@
+
 import { useEffect, useRef } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Bot, MessageSquare } from "lucide-react";
@@ -173,7 +174,7 @@ export function Emma() {
           </Card>
         </div>
 
-        {/* Chat Container */}
+        {/* Chat Container - Now embedded directly */}
         <Card className="flex-1 flex flex-col">
           <CardHeader className="pb-3">
             <CardTitle className="flex items-center text-lg">
@@ -181,10 +182,10 @@ export function Emma() {
               Chat with Emma
             </CardTitle>
           </CardHeader>
-          <CardContent className="flex-1 p-4">
+          <CardContent className="flex-1 p-0">
             <div 
               ref={chatContainerRef}
-              className="h-full w-full rounded-lg border bg-white"
+              className="h-full w-full"
               style={{ minHeight: '500px' }}
             />
           </CardContent>
