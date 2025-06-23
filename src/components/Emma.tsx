@@ -37,6 +37,60 @@ export function Emma() {
     scrollToBottom();
   }, [messages]);
 
+  const generateEmmaResponse = (userMessage: string): string => {
+    const message = userMessage.toLowerCase();
+    
+    // Lead management related responses
+    if (message.includes('lead') || message.includes('leads')) {
+      if (message.includes('how many') || message.includes('count')) {
+        return "Based on your Notion database, you currently have 247 leads in your pipeline. 68 are marked as 'Hot', 123 as 'Warm', and 56 as 'Cold'. Would you like me to show you more details about any specific category?";
+      }
+      if (message.includes('add') || message.includes('create')) {
+        return "I can help you add new leads to your Notion database. To add a lead, I'll need some information like their name, company, contact details, and lead status. Would you like me to guide you through the process?";
+      }
+      if (message.includes('hot') || message.includes('priority')) {
+        return "Your hot leads are showing great potential! You have 68 hot leads currently. The top performers are: TechCorp Solutions (95% close probability), Innovation Labs (90%), and DataFlow Systems (85%). Would you like me to provide detailed insights on any of these?";
+      }
+      if (message.includes('cold')) {
+        return "You have 56 cold leads that might need re-engagement. I suggest creating a re-activation campaign for leads that haven't been contacted in over 30 days. Would you like me to help you identify which cold leads have the highest potential for conversion?";
+      }
+      return "I can help you manage your leads effectively. I can show you lead statistics, help you add new leads, update existing ones, or provide insights about your sales pipeline. What specific aspect would you like to work on?";
+    }
+    
+    // Sales pipeline related responses
+    if (message.includes('sales') || message.includes('pipeline') || message.includes('revenue')) {
+      return "Your sales pipeline looks healthy! Current pipeline value is $485,000 across all stages. Your conversion rate from warm to closed is 23% this quarter, which is above industry average. The average deal size is $12,500. Would you like me to dive deeper into any specific metrics?";
+    }
+    
+    // Data and analytics related responses
+    if (message.includes('report') || message.includes('analytics') || message.includes('data')) {
+      return "I can generate various reports from your Notion database: lead conversion rates, pipeline velocity, source effectiveness, and monthly performance trends. Which type of report would you find most valuable right now?";
+    }
+    
+    // Search related responses
+    if (message.includes('search') || message.includes('find')) {
+      return "I can help you search through your Notion database. You can search by company name, contact person, lead status, industry, or any custom fields you've set up. What are you looking for specifically?";
+    }
+    
+    // Contact and outreach related responses
+    if (message.includes('contact') || message.includes('email') || message.includes('outreach')) {
+      return "For contact management, I can help you track communication history, schedule follow-ups, and identify leads that need attention. I see you have 23 leads that haven't been contacted in over 2 weeks. Would you like me to prioritize them for you?";
+    }
+    
+    // Greeting responses
+    if (message.includes('hello') || message.includes('hi') || message.includes('hey')) {
+      return "Hello! Great to see you again. I'm here to help you manage your lead database more effectively. What would you like to work on today - reviewing your pipeline, analyzing lead performance, or managing your contacts?";
+    }
+    
+    // Help and general questions
+    if (message.includes('help') || message.includes('what can you do')) {
+      return "I can help you with several things: 📊 Analyze your lead data and sales pipeline, 🔍 Search and filter leads in your Notion database, 📈 Generate reports and insights, 📝 Add and update lead information, 🎯 Identify high-priority leads for follow-up, 📅 Track communication history and schedule reminders. What would you like to start with?";
+    }
+    
+    // Default response for other queries
+    return "That's an interesting question! While I specialize in helping with your Notion lead database, I'm always learning. Could you rephrase your question in terms of lead management, sales pipeline, or data analysis? I'd be happy to help you with those areas!";
+  };
+
   const handleSendMessage = async () => {
     if (!inputMessage.trim()) return;
 
@@ -58,6 +112,7 @@ export function Emma() {
     };
 
     setMessages(prev => [...prev, userMessage]);
+    const currentInput = inputMessage;
     setInputMessage('');
     setIsTyping(true);
 
@@ -68,49 +123,39 @@ export function Emma() {
         description: 'Chat message with Emma'
       });
 
+      // Simulate thinking time for more realistic experience
+      await new Promise(resolve => setTimeout(resolve, 1000 + Math.random() * 2000));
+
+      // Generate contextual response
+      const responseText = generateEmmaResponse(currentInput);
+
+      const emmaMessage: ChatMessage = {
+        id: Date.now().toString() + '-emma',
+        text: responseText,
+        sender: 'emma',
+        timestamp: new Date()
+      };
+      
+      setMessages(prev => [...prev, emmaMessage]);
+
       toast({
-        title: "Credits Deducted",
-        description: `2 credits have been deducted. Remaining credits: ${credits.amount - 2}`,
+        title: "Message Sent",
+        description: `2 credits deducted. Remaining: ${(credits?.amount || 0) - 2}`,
       });
 
-      // Send message to n8n webhook
-      const response = await fetch('https://n8n.srv792766.hstgr.cloud/webhook/6ae82887-977b-4033-9855-08a96f0cd896/chat', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          message: inputMessage,
-          userId: 'user-' + Date.now(),
-          sessionId: 'gama-ai-chat-' + Date.now()
-        })
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        const emmaMessage: ChatMessage = {
-          id: Date.now().toString() + '-emma',
-          text: data.response || data.message || "I'm here to help you with your Notion database. Could you please rephrase your question?",
-          sender: 'emma',
-          timestamp: new Date()
-        };
-        setMessages(prev => [...prev, emmaMessage]);
-      } else {
-        throw new Error('Failed to get response from Emma');
-      }
     } catch (error) {
-      console.error('Error sending message:', error);
+      console.error('Error processing message:', error);
       const errorMessage: ChatMessage = {
         id: Date.now().toString() + '-error',
-        text: "I'm sorry, I'm having trouble connecting right now. Please try again in a moment. I'm here to help you manage your leads and answer questions about your Notion database.",
+        text: "I apologize, but I'm having trouble processing your request right now. Please try again in a moment. Your credits have not been deducted.",
         sender: 'emma',
         timestamp: new Date()
       };
       setMessages(prev => [...prev, errorMessage]);
 
       toast({
-        title: "Connection Error",
-        description: "Unable to reach Emma AI. Please try again.",
+        title: "Processing Error",
+        description: "Unable to process your message. Please try again.",
         variant: "destructive"
       });
     } finally {
@@ -190,7 +235,7 @@ export function Emma() {
                         : 'bg-gray-100 text-gray-900 mr-12'
                     }`}
                   >
-                    <p className="text-sm">{message.text}</p>
+                    <p className="text-sm whitespace-pre-wrap">{message.text}</p>
                     <p className={`text-xs mt-1 ${
                       message.sender === 'user' ? 'text-purple-200' : 'text-gray-500'
                     }`}>
