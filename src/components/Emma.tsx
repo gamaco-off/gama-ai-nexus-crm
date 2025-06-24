@@ -45,6 +45,9 @@ export function Emma() {
     const savedWebhookUrl = localStorage.getItem('emma-webhook-url');
     if (savedWebhookUrl) {
       setWebhookUrl(savedWebhookUrl);
+    } else {
+      // Show settings by default if no webhook URL is configured
+      setShowSettings(true);
     }
   }, []);
 
@@ -55,6 +58,12 @@ export function Emma() {
       toast({
         title: "Settings Saved",
         description: "Emma is now connected to your n8n workflow!",
+      });
+    } else {
+      toast({
+        title: "Error",
+        description: "Please enter a valid webhook URL",
+        variant: "destructive"
       });
     }
   };
@@ -75,7 +84,7 @@ export function Emma() {
         },
         body: JSON.stringify({
           chatInput: message,
-          sessionId: `user-${Date.now()}`, // Generate unique session ID
+          sessionId: `user-${Date.now()}`,
         }),
       });
 
@@ -96,7 +105,18 @@ export function Emma() {
   const handleSendMessage = async () => {
     if (!inputMessage.trim()) return;
 
-    // Check credits first
+    // Check if webhook URL is configured
+    if (!webhookUrl.trim()) {
+      toast({
+        title: "Configuration Required",
+        description: "Please configure your n8n webhook URL in settings first.",
+        variant: "destructive"
+      });
+      setShowSettings(true);
+      return;
+    }
+
+    // Check credits
     if (!credits || credits.amount < 2) {
       toast({
         title: "Insufficient Credits",
@@ -219,11 +239,11 @@ export function Emma() {
                     <Input
                       value={webhookUrl}
                       onChange={(e) => setWebhookUrl(e.target.value)}
-                      placeholder="https://your-n8n-instance.com/webhook/emma-ai"
+                      placeholder="https://your-n8n-instance.com/webhook/6ae82887-977b-4033-9855-08a96f0cd896"
                       className="w-full"
                     />
                     <p className="text-xs text-gray-500 mt-1">
-                      Enter your n8n webhook URL for the Emma AI workflow
+                      Enter your n8n webhook URL for the Emma AI workflow. The webhook ID from your workflow is: 6ae82887-977b-4033-9855-08a96f0cd896
                     </p>
                   </div>
                   <div className="flex space-x-2">
@@ -265,14 +285,13 @@ export function Emma() {
             <CardTitle className="flex items-center text-lg">
               <MessageSquare className="w-5 h-5 mr-2 text-purple-600" />
               Chat with Emma AI
-              {webhookUrl && (
+              {webhookUrl ? (
                 <span className="ml-2 px-2 py-1 text-xs bg-green-100 text-green-800 rounded-full">
                   Connected
                 </span>
-              )}
-              {!webhookUrl && (
+              ) : (
                 <span className="ml-2 px-2 py-1 text-xs bg-orange-100 text-orange-800 rounded-full">
-                  Not Configured
+                  Setup Required
                 </span>
               )}
             </CardTitle>
@@ -311,13 +330,13 @@ export function Emma() {
                   value={inputMessage}
                   onChange={(e) => setInputMessage(e.target.value)}
                   onKeyPress={handleKeyPress}
-                  placeholder="Ask Emma about your leads, send emails, or get insights..."
-                  disabled={isTyping || !webhookUrl}
+                  placeholder={webhookUrl ? "Ask Emma about your leads, send emails, or get insights..." : "Configure webhook URL in settings to start chatting..."}
+                  disabled={isTyping}
                   className="flex-1"
                 />
                 <Button
                   onClick={handleSendMessage}
-                  disabled={isTyping || !inputMessage.trim() || !webhookUrl}
+                  disabled={isTyping || !inputMessage.trim()}
                   className="bg-purple-600 hover:bg-purple-700"
                 >
                   <Send className="w-4 h-4" />
