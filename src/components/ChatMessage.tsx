@@ -9,27 +9,33 @@ interface ChatMessageProps {
 
 export function ChatMessage({ message, isUser, timestamp }: ChatMessageProps) {
   return (
-    <div className={`flex items-start space-x-3 ${isUser ? 'flex-row-reverse space-x-reverse' : ''}`}>
-      <div className={`flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center ${
-        isUser ? 'bg-blue-500' : 'bg-purple-500'
-      }`}>
-        {isUser ? (
-          <User className="w-4 h-4 text-white" />
-        ) : (
-          <Bot className="w-4 h-4 text-white" />
-        )}
-      </div>
-      <div className={`flex-1 ${isUser ? 'text-right' : 'text-left'}`}>
-        <div className={`inline-block px-4 py-2 rounded-lg max-w-xs lg:max-w-md ${
-          isUser 
-            ? 'bg-blue-500 text-white' 
-            : 'bg-gray-200 text-gray-900'
-        }`}>
-          <p className="text-sm whitespace-pre-wrap">{message}</p>
+    <div className={`flex ${isUser ? 'justify-end' : 'justify-start'}`}>
+      <div
+        className={`max-w-[80%] p-3 rounded-lg ${
+          isUser
+            ? 'bg-purple-600 text-white ml-12'
+            : 'bg-gray-100 text-gray-900 mr-12'
+        }`}
+      >
+        <div className="flex items-start space-x-2">
+          <div className={`flex-shrink-0 w-6 h-6 rounded-full flex items-center justify-center ${
+            isUser ? 'bg-purple-500' : 'bg-gray-300'
+          }`}>
+            {isUser ? (
+              <User className="w-3 h-3 text-white" />
+            ) : (
+              <Bot className="w-3 h-3 text-gray-600" />
+            )}
+          </div>
+          <div className="flex-1">
+            <p className="text-sm whitespace-pre-wrap">{message}</p>
+            <p className={`text-xs mt-1 ${
+              isUser ? 'text-purple-200' : 'text-gray-500'
+            }`}>
+              {new Date(timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+            </p>
+          </div>
         </div>
-        <p className="text-xs text-gray-500 mt-1">
-          {new Date(timestamp).toLocaleTimeString()}
-        </p>
       </div>
     </div>
   );

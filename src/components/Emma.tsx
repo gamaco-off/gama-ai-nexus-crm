@@ -1,13 +1,14 @@
 
 import { useEffect, useRef, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Bot, MessageSquare, Send } from "lucide-react";
+import { Bot, MessageSquare, Send, Settings } from "lucide-react";
 import { useCredits } from "@/hooks/useCredits";
 import { useToast } from "@/components/ui/use-toast";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { ChatMessage } from "./ChatMessage";
 
-interface ChatMessage {
+interface ChatMessageType {
   id: string;
   text: string;
   sender: 'user' | 'emma';
@@ -15,18 +16,20 @@ interface ChatMessage {
 }
 
 export function Emma() {
-  const { credits, deductCredits, isLoading } = useCredits();
+  const { credits, deductCredits, isLoading: creditsLoading } = useCredits();
   const { toast } = useToast();
-  const [messages, setMessages] = useState<ChatMessage[]>([
+  const [messages, setMessages] = useState<ChatMessageType[]>([
     {
       id: '1',
-      text: "Hello! I'm Emma, your AI-powered Notion Database Assistant. I can help you search and manage your leads, get insights about your sales pipeline, and answer questions about your lead data. How can I assist you today?",
+      text: "Hello! I'm Emma, your AI-powered assistant connected to your Notion CRM database. I can help you search leads, send emails, make calls, and much more using real-time data from your systems. How can I assist you today?",
       sender: 'emma',
       timestamp: new Date()
     }
   ]);
   const [inputMessage, setInputMessage] = useState('');
   const [isTyping, setIsTyping] = useState(false);
+  const [webhookUrl, setWebhookUrl] = useState('');
+  const [showSettings, setShowSettings] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const scrollToBottom = () => {
@@ -37,58 +40,57 @@ export function Emma() {
     scrollToBottom();
   }, [messages]);
 
-  const generateEmmaResponse = (userMessage: string): string => {
-    const message = userMessage.toLowerCase();
-    
-    // Lead management related responses
-    if (message.includes('lead') || message.includes('leads')) {
-      if (message.includes('how many') || message.includes('count')) {
-        return "Based on your Notion database, you currently have 247 leads in your pipeline. 68 are marked as 'Hot', 123 as 'Warm', and 56 as 'Cold'. Would you like me to show you more details about any specific category?";
+  useEffect(() => {
+    // Load webhook URL from localStorage
+    const savedWebhookUrl = localStorage.getItem('emma-webhook-url');
+    if (savedWebhookUrl) {
+      setWebhookUrl(savedWebhookUrl);
+    }
+  }, []);
+
+  const saveWebhookUrl = () => {
+    if (webhookUrl.trim()) {
+      localStorage.setItem('emma-webhook-url', webhookUrl.trim());
+      setShowSettings(false);
+      toast({
+        title: "Settings Saved",
+        description: "Emma is now connected to your n8n workflow!",
+      });
+    }
+  };
+
+  const callEmmaWorkflow = async (message: string): Promise<string> => {
+    if (!webhookUrl.trim()) {
+      throw new Error('Please configure your n8n webhook URL in settings first.');
+    }
+
+    console.log('Calling Emma n8n workflow with message:', message);
+    console.log('Webhook URL:', webhookUrl);
+
+    try {
+      const response = await fetch(webhookUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          chatInput: message,
+          sessionId: `user-${Date.now()}`, // Generate unique session ID
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
       }
-      if (message.includes('add') || message.includes('create')) {
-        return "I can help you add new leads to your Notion database. To add a lead, I'll need some information like their name, company, contact details, and lead status. Would you like me to guide you through the process?";
-      }
-      if (message.includes('hot') || message.includes('priority')) {
-        return "Your hot leads are showing great potential! You have 68 hot leads currently. The top performers are: TechCorp Solutions (95% close probability), Innovation Labs (90%), and DataFlow Systems (85%). Would you like me to provide detailed insights on any of these?";
-      }
-      if (message.includes('cold')) {
-        return "You have 56 cold leads that might need re-engagement. I suggest creating a re-activation campaign for leads that haven't been contacted in over 30 days. Would you like me to help you identify which cold leads have the highest potential for conversion?";
-      }
-      return "I can help you manage your leads effectively. I can show you lead statistics, help you add new leads, update existing ones, or provide insights about your sales pipeline. What specific aspect would you like to work on?";
+
+      const responseText = await response.text();
+      console.log('Emma workflow response:', responseText);
+      
+      return responseText || "I received your message but couldn't generate a response. Please try again.";
+    } catch (error) {
+      console.error('Error calling Emma workflow:', error);
+      throw new Error(`Failed to connect to Emma AI: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
-    
-    // Sales pipeline related responses
-    if (message.includes('sales') || message.includes('pipeline') || message.includes('revenue')) {
-      return "Your sales pipeline looks healthy! Current pipeline value is $485,000 across all stages. Your conversion rate from warm to closed is 23% this quarter, which is above industry average. The average deal size is $12,500. Would you like me to dive deeper into any specific metrics?";
-    }
-    
-    // Data and analytics related responses
-    if (message.includes('report') || message.includes('analytics') || message.includes('data')) {
-      return "I can generate various reports from your Notion database: lead conversion rates, pipeline velocity, source effectiveness, and monthly performance trends. Which type of report would you find most valuable right now?";
-    }
-    
-    // Search related responses
-    if (message.includes('search') || message.includes('find')) {
-      return "I can help you search through your Notion database. You can search by company name, contact person, lead status, industry, or any custom fields you've set up. What are you looking for specifically?";
-    }
-    
-    // Contact and outreach related responses
-    if (message.includes('contact') || message.includes('email') || message.includes('outreach')) {
-      return "For contact management, I can help you track communication history, schedule follow-ups, and identify leads that need attention. I see you have 23 leads that haven't been contacted in over 2 weeks. Would you like me to prioritize them for you?";
-    }
-    
-    // Greeting responses
-    if (message.includes('hello') || message.includes('hi') || message.includes('hey')) {
-      return "Hello! Great to see you again. I'm here to help you manage your lead database more effectively. What would you like to work on today - reviewing your pipeline, analyzing lead performance, or managing your contacts?";
-    }
-    
-    // Help and general questions
-    if (message.includes('help') || message.includes('what can you do')) {
-      return "I can help you with several things: 📊 Analyze your lead data and sales pipeline, 🔍 Search and filter leads in your Notion database, 📈 Generate reports and insights, 📝 Add and update lead information, 🎯 Identify high-priority leads for follow-up, 📅 Track communication history and schedule reminders. What would you like to start with?";
-    }
-    
-    // Default response for other queries
-    return "That's an interesting question! While I specialize in helping with your Notion lead database, I'm always learning. Could you rephrase your question in terms of lead management, sales pipeline, or data analysis? I'd be happy to help you with those areas!";
   };
 
   const handleSendMessage = async () => {
@@ -104,7 +106,7 @@ export function Emma() {
       return;
     }
 
-    const userMessage: ChatMessage = {
+    const userMessage: ChatMessageType = {
       id: Date.now().toString(),
       text: inputMessage,
       sender: 'user',
@@ -117,19 +119,16 @@ export function Emma() {
     setIsTyping(true);
 
     try {
-      // Deduct credits
+      // Deduct credits first
       await deductCredits.mutateAsync({
         amount: 2,
-        description: 'Chat message with Emma'
+        description: 'Chat message with Emma AI'
       });
 
-      // Simulate thinking time for more realistic experience
-      await new Promise(resolve => setTimeout(resolve, 1000 + Math.random() * 2000));
+      // Call the actual Emma n8n workflow
+      const responseText = await callEmmaWorkflow(currentInput);
 
-      // Generate contextual response
-      const responseText = generateEmmaResponse(currentInput);
-
-      const emmaMessage: ChatMessage = {
+      const emmaMessage: ChatMessageType = {
         id: Date.now().toString() + '-emma',
         text: responseText,
         sender: 'emma',
@@ -145,9 +144,9 @@ export function Emma() {
 
     } catch (error) {
       console.error('Error processing message:', error);
-      const errorMessage: ChatMessage = {
+      const errorMessage: ChatMessageType = {
         id: Date.now().toString() + '-error',
-        text: "I apologize, but I'm having trouble processing your request right now. Please try again in a moment. Your credits have not been deducted.",
+        text: error instanceof Error ? error.message : "I'm having trouble processing your request right now. Please check your settings and try again.",
         sender: 'emma',
         timestamp: new Date()
       };
@@ -155,7 +154,7 @@ export function Emma() {
 
       toast({
         title: "Processing Error",
-        description: "Unable to process your message. Please try again.",
+        description: error instanceof Error ? error.message : "Unable to process your message. Please try again.",
         variant: "destructive"
       });
     } finally {
@@ -171,7 +170,7 @@ export function Emma() {
   };
 
   // Show loading state while credits are being fetched
-  if (isLoading) {
+  if (creditsLoading) {
     return (
       <div className="h-full bg-gray-50 flex items-center justify-center">
         <div className="text-gray-500">Loading chat...</div>
@@ -184,27 +183,75 @@ export function Emma() {
       <div className="p-6 h-full flex flex-col">
         {/* Header */}
         <div className="mb-6">
-          <div className="flex items-center space-x-3 mb-4">
-            <div className="w-12 h-12 bg-gradient-to-br from-purple-600 to-blue-600 rounded-xl flex items-center justify-center">
-              <Bot className="w-7 h-7 text-white" />
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center space-x-3">
+              <div className="w-12 h-12 bg-gradient-to-br from-purple-600 to-blue-600 rounded-xl flex items-center justify-center">
+                <Bot className="w-7 h-7 text-white" />
+              </div>
+              <div>
+                <h1 className="text-3xl font-bold text-gray-900">Emma AI</h1>
+                <p className="text-gray-600">Connected to your n8n workflow & Notion CRM</p>
+              </div>
             </div>
-            <div>
-              <h1 className="text-3xl font-bold text-gray-900">Emma</h1>
-              <p className="text-gray-600">Your AI-powered Notion Database Assistant</p>
-            </div>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setShowSettings(!showSettings)}
+              className="flex items-center space-x-2"
+            >
+              <Settings className="w-4 h-4" />
+              <span>Settings</span>
+            </Button>
           </div>
+
+          {/* Settings Panel */}
+          {showSettings && (
+            <Card className="mb-4 border-purple-200">
+              <CardHeader className="pb-3">
+                <CardTitle className="text-lg">Emma AI Configuration</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      n8n Webhook URL
+                    </label>
+                    <Input
+                      value={webhookUrl}
+                      onChange={(e) => setWebhookUrl(e.target.value)}
+                      placeholder="https://your-n8n-instance.com/webhook/emma-ai"
+                      className="w-full"
+                    />
+                    <p className="text-xs text-gray-500 mt-1">
+                      Enter your n8n webhook URL for the Emma AI workflow
+                    </p>
+                  </div>
+                  <div className="flex space-x-2">
+                    <Button onClick={saveWebhookUrl} className="bg-purple-600 hover:bg-purple-700">
+                      Save Settings
+                    </Button>
+                    <Button variant="outline" onClick={() => setShowSettings(false)}>
+                      Cancel
+                    </Button>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          )}
           
           <Card className="bg-gradient-to-r from-purple-50 to-blue-50 border-purple-200">
             <CardContent className="p-4">
               <div className="flex items-start space-x-3">
                 <MessageSquare className="w-5 h-5 text-purple-600 mt-0.5" />
                 <div>
-                  <h3 className="font-semibold text-purple-900 mb-1">What can Emma help you with?</h3>
+                  <h3 className="font-semibold text-purple-900 mb-1">Emma's Real-Time Capabilities</h3>
                   <ul className="text-sm text-purple-700 space-y-1">
-                    <li>• Search and manage your leads in Notion</li>
-                    <li>• Get insights about your sales pipeline</li>
-                    <li>• Answer questions about lead data and statistics</li>
-                    <li>• Help with lead management tasks</li>
+                    <li>• Access your Notion CRM database in real-time</li>
+                    <li>• Send emails through Gmail integration</li>
+                    <li>• Make calls and send SMS via Twilio</li>
+                    <li>• Send WhatsApp messages</li>
+                    <li>• Search the web with SerpAPI</li>
+                    <li>• Powered by Azure OpenAI for intelligent responses</li>
                   </ul>
                 </div>
               </div>
@@ -217,32 +264,29 @@ export function Emma() {
           <CardHeader className="pb-3">
             <CardTitle className="flex items-center text-lg">
               <MessageSquare className="w-5 h-5 mr-2 text-purple-600" />
-              Chat with Emma
+              Chat with Emma AI
+              {webhookUrl && (
+                <span className="ml-2 px-2 py-1 text-xs bg-green-100 text-green-800 rounded-full">
+                  Connected
+                </span>
+              )}
+              {!webhookUrl && (
+                <span className="ml-2 px-2 py-1 text-xs bg-orange-100 text-orange-800 rounded-full">
+                  Not Configured
+                </span>
+              )}
             </CardTitle>
           </CardHeader>
           <CardContent className="flex-1 p-0 flex flex-col">
             {/* Messages Area */}
             <div className="flex-1 p-4 overflow-y-auto space-y-4" style={{ minHeight: '400px', maxHeight: '500px' }}>
               {messages.map((message) => (
-                <div
+                <ChatMessage
                   key={message.id}
-                  className={`flex ${message.sender === 'user' ? 'justify-end' : 'justify-start'}`}
-                >
-                  <div
-                    className={`max-w-[80%] p-3 rounded-lg ${
-                      message.sender === 'user'
-                        ? 'bg-purple-600 text-white ml-12'
-                        : 'bg-gray-100 text-gray-900 mr-12'
-                    }`}
-                  >
-                    <p className="text-sm whitespace-pre-wrap">{message.text}</p>
-                    <p className={`text-xs mt-1 ${
-                      message.sender === 'user' ? 'text-purple-200' : 'text-gray-500'
-                    }`}>
-                      {message.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                    </p>
-                  </div>
-                </div>
+                  message={message.text}
+                  isUser={message.sender === 'user'}
+                  timestamp={message.timestamp.toISOString()}
+                />
               ))}
               
               {isTyping && (
@@ -267,13 +311,13 @@ export function Emma() {
                   value={inputMessage}
                   onChange={(e) => setInputMessage(e.target.value)}
                   onKeyPress={handleKeyPress}
-                  placeholder="Ask Emma about your leads..."
-                  disabled={isTyping}
+                  placeholder="Ask Emma about your leads, send emails, or get insights..."
+                  disabled={isTyping || !webhookUrl}
                   className="flex-1"
                 />
                 <Button
                   onClick={handleSendMessage}
-                  disabled={isTyping || !inputMessage.trim()}
+                  disabled={isTyping || !inputMessage.trim() || !webhookUrl}
                   className="bg-purple-600 hover:bg-purple-700"
                 >
                   <Send className="w-4 h-4" />
@@ -281,6 +325,7 @@ export function Emma() {
               </div>
               <p className="text-xs text-gray-500 mt-2">
                 Each message costs 2 credits. You have {credits?.amount || 0} credits remaining.
+                {!webhookUrl && " Configure webhook URL in settings to start chatting."}
               </p>
             </div>
           </CardContent>
