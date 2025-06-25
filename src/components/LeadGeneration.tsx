@@ -9,7 +9,6 @@
 //   );
 // } 
 
-
 "use client";
 
 import { useState } from "react";
@@ -20,14 +19,14 @@ import { Loader2, Send, CheckCircle } from "lucide-react";
 import { Label } from "@/components/ui/label";
 
 export function LeadGeneration() {
-  const [bussinus, setbussinus] = useState("");
+  const [industry, setIndustry] = useState("");
   const [location, setLocation] = useState("");
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   const handleSubmit = async () => {
-    if (!bussinus || !location) return;
+    if (!industry || !location) return;
     setLoading(true);
     setResult(null);
     setError(null);
@@ -37,7 +36,7 @@ export function LeadGeneration() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          bussinus,
+          industry,
           location,
         }),
       });
@@ -47,6 +46,7 @@ export function LeadGeneration() {
         console.error('N8n webhook error:', response.status, response.statusText, errorText);
         throw new Error(`Failed to trigger automation: ${response.status} ${response.statusText} - ${errorText}`);
       }
+
       const data = await response.json();
       setResult("✅ Lead submitted and processed successfully.");
     } catch (err) {
@@ -68,12 +68,13 @@ export function LeadGeneration() {
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="space-y-2">
-            <Label htmlFor="bussinus">Industry</Label>
+        <Label htmlFor="bussinus">Industry</Label>
+
             <Input
-              id="bussinus"
-              placeholder="e.g. G2C Grill 2 Chill"
-              value={bussinus}
-              onChange={(e) => setbussinus(e.target.value)}
+              id="industry"
+              placeholder="e.g. Software Company"
+              value={industry}
+              onChange={(e) => setIndustry(e.target.value)}
             />
           </div>
 
@@ -89,7 +90,7 @@ export function LeadGeneration() {
 
           <Button
             onClick={handleSubmit}
-            disabled={loading || !bussinus || !location}
+            disabled={loading || !industry || !location}
             className="w-full bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700"
           >
             {loading ? (
