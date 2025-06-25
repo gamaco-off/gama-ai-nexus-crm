@@ -1,4 +1,6 @@
 
+
+
 import { useEffect, useRef, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Bot, MessageSquare, Send, Settings } from "lucide-react";
@@ -92,10 +94,10 @@ export function Emma() {
         throw new Error(`HTTP ${response.status}: ${response.statusText}`);
       }
 
-      const responseText = await response.text();
-      console.log('Emma workflow response:', responseText);
-      
-      return responseText || "I received your message but couldn't generate a response. Please try again.";
+      // Parse as JSON and return only the value of the output key
+      const responseJson = await response.json();
+      console.log('Emma workflow response:', responseJson);
+      return responseJson.output || "I received your message but couldn't generate a response. Please try again.";
     } catch (error) {
       console.error('Error calling Emma workflow:', error);
       throw new Error(`Failed to connect to Emma AI: ${error instanceof Error ? error.message : 'Unknown error'}`);
@@ -154,7 +156,7 @@ export function Emma() {
         sender: 'emma',
         timestamp: new Date()
       };
-      
+
       setMessages(prev => [...prev, emmaMessage]);
 
       toast({
@@ -258,7 +260,7 @@ export function Emma() {
               </CardContent>
             </Card>
           )}
-          
+
           <Card className="bg-gradient-to-r from-purple-50 to-blue-50 border-purple-200">
             <CardContent className="p-4">
               <div className="flex items-start space-x-3">
@@ -307,7 +309,7 @@ export function Emma() {
                   timestamp={message.timestamp.toISOString()}
                 />
               ))}
-              
+
               {isTyping && (
                 <div className="flex justify-start">
                   <div className="bg-gray-100 text-gray-900 p-3 rounded-lg mr-12">
@@ -319,7 +321,7 @@ export function Emma() {
                   </div>
                 </div>
               )}
-              
+
               <div ref={messagesEndRef} />
             </div>
 
