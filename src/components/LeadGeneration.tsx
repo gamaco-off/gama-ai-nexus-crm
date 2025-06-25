@@ -68,7 +68,8 @@ export function LeadGeneration() {
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="space-y-2">
-            <Label htmlFor="industry">Business Type</Label>
+        <Label htmlFor="bussinus">Industry</Label>
+
             <Input
               id="industry"
               placeholder="e.g. Software Company"

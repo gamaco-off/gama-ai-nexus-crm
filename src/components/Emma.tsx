@@ -1,138 +1,196 @@
-import { useEffect, useRef } from "react";
+
+import { useEffect, useRef, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Bot, MessageSquare } from "lucide-react";
+import { Bot, MessageSquare, Send, Settings } from "lucide-react";
 import { useCredits } from "@/hooks/useCredits";
 import { useToast } from "@/components/ui/use-toast";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { ChatMessage } from "./ChatMessage";
+
+interface ChatMessageType {
+  id: string;
+  text: string;
+  sender: 'user' | 'emma';
+  timestamp: Date;
+}
 
 export function Emma() {
-  const chatContainerRef = useRef<HTMLDivElement>(null);
-  const { credits, deductCredits, isLoading } = useCredits();
+  const { credits, deductCredits, isLoading: creditsLoading } = useCredits();
   const { toast } = useToast();
+  const [messages, setMessages] = useState<ChatMessageType[]>([
+    {
+      id: '1',
+      text: "Hello! I'm Emma, your AI-powered assistant connected to your Notion CRM database. I can help you search leads, send emails, make calls, and much more using real-time data from your systems. How can I assist you today?",
+      sender: 'emma',
+      timestamp: new Date()
+    }
+  ]);
+  const [inputMessage, setInputMessage] = useState('');
+  const [isTyping, setIsTyping] = useState(false);
+  const [webhookUrl, setWebhookUrl] = useState('');
+  const [showSettings, setShowSettings] = useState(false);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  };
 
   useEffect(() => {
-    // Initialize the n8n chat widget using the CDN
-    const initializeChat = () => {
-      if (!chatContainerRef.current) return;
+    scrollToBottom();
+  }, [messages]);
 
-      // Clear any existing content
-      chatContainerRef.current.innerHTML = '';
+  useEffect(() => {
+    // Load webhook URL from localStorage
+    const savedWebhookUrl = localStorage.getItem('emma-webhook-url');
+    if (savedWebhookUrl) {
+      setWebhookUrl(savedWebhookUrl);
+    } else {
+      // Show settings by default if no webhook URL is configured
+      setShowSettings(true);
+    }
+  }, []);
 
-      // Create the chat container
-      const chatDiv = document.createElement('div');
-      chatDiv.id = 'n8n-chat';
-      chatDiv.style.height = '100%';
-      chatDiv.style.width = '100%';
-      chatContainerRef.current.appendChild(chatDiv);
+  const saveWebhookUrl = () => {
+    if (webhookUrl.trim()) {
+      localStorage.setItem('emma-webhook-url', webhookUrl.trim());
+      setShowSettings(false);
+      toast({
+        title: "Settings Saved",
+        description: "Emma is now connected to your n8n workflow!",
+      });
+    } else {
+      toast({
+        title: "Error",
+        description: "Please enter a valid webhook URL",
+        variant: "destructive"
+      });
+    }
+  };
 
-      // Load the CSS
-      const cssLink = document.createElement('link');
-      cssLink.href = 'https://cdn.jsdelivr.net/npm/@n8n/chat/dist/style.css';
-      cssLink.rel = 'stylesheet';
-      document.head.appendChild(cssLink);
+  const callEmmaWorkflow = async (message: string): Promise<string> => {
+    if (!webhookUrl.trim()) {
+      throw new Error('Please configure your n8n webhook URL in settings first.');
+    }
 
-      // Load and initialize the chat script
-      const script = document.createElement('script');
-      script.type = 'module';
-      script.innerHTML = `
-        import { createChat } from 'https://cdn.jsdelivr.net/npm/@n8n/chat/dist/chat.bundle.es.js';
-        
-        const chat = createChat({
-          webhookUrl: 'https://n8n.srv792766.hstgr.cloud/webhook/6ae82887-977b-4033-9855-08a96f0cd896/chat',
-          target: '#n8n-chat',
-          mode: 'fullscreen',
-          loadPreviousSession: true,
-          chatSessionKey: 'gama-ai-chat',
-          chatWindowOptions: {
-            title: 'Emma - AI Assistant',
-            subtitle: 'Your Notion Database Assistant',
-            footer: ''
-          }
-        });
+    console.log('Calling Emma n8n workflow with message:', message);
+    console.log('Webhook URL:', webhookUrl);
 
-        // Add event listeners for message events
-        chat.on('message:sent', async (message) => {
-          console.log('Message sent event triggered');
-          // Check if user has enough credits
-          const currentCredits = ${credits?.amount ?? 0};
-          console.log('Current credits before sending message:', currentCredits);
-          
-          if (currentCredits < 2) {
-            console.log('Insufficient credits:', currentCredits);
-            window.dispatchEvent(new CustomEvent('insufficient-credits'));
-            return false;
-          }
-          
-          // Deduct credits immediately when message is sent
-          window.dispatchEvent(new CustomEvent('deduct-credits'));
-          console.log('Sufficient credits, proceeding with message');
-          return true;
-        });
+    try {
+      const response = await fetch(webhookUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          chatInput: message,
+          sessionId: `user-${Date.now()}`,
+        }),
+      });
 
-        chat.on('error', (error) => {
-          console.error('Chat error:', error);
-        });
-      `;
-      document.body.appendChild(script);
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      }
 
-      // Listen for insufficient credits event
-      const handleInsufficientCredits = () => {
-        console.log('Handling insufficient credits event');
-        toast({
-          title: "Insufficient Credits",
-          description: "You need at least 2 credits to send a message. Please add more credits to continue chatting.",
-          variant: "destructive"
-        });
-      };
+      const responseText = await response.text();
+      console.log('Emma workflow response:', responseText);
+      
+      return responseText || "I received your message but couldn't generate a response. Please try again.";
+    } catch (error) {
+      console.error('Error calling Emma workflow:', error);
+      throw new Error(`Failed to connect to Emma AI: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
+  };
 
-      // Listen for deduct credits event
-      const handleDeductCredits = async () => {
-        try {
-          console.log('Starting credit deduction process');
-          console.log('Current credits before deduction:', credits?.amount);
-          
-          const result = await deductCredits.mutateAsync({
-            amount: 2,
-            description: 'Chat message with Emma'
-          });
-          
-          console.log('Credit deduction result:', result);
-          console.log('New credit amount:', result.amount);
-          
-          toast({
-            title: "Credits Deducted",
-            description: `2 credits have been deducted. Remaining credits: ${result.amount}`,
-          });
-        } catch (error) {
-          console.error('Error in credit deduction:', error);
-          toast({
-            title: "Error",
-            description: "Failed to deduct credits. Please try again.",
-            variant: "destructive"
-          });
-        }
-      };
+  const handleSendMessage = async () => {
+    if (!inputMessage.trim()) return;
 
-      // Add event listeners
-      window.addEventListener('insufficient-credits', handleInsufficientCredits);
-      window.addEventListener('deduct-credits', handleDeductCredits);
+    // Check if webhook URL is configured
+    if (!webhookUrl.trim()) {
+      toast({
+        title: "Configuration Required",
+        description: "Please configure your n8n webhook URL in settings first.",
+        variant: "destructive"
+      });
+      setShowSettings(true);
+      return;
+    }
 
-      // Cleanup function
-      return () => {
-        window.removeEventListener('insufficient-credits', handleInsufficientCredits);
-        window.removeEventListener('deduct-credits', handleDeductCredits);
-      };
+    // Check credits
+    if (!credits || credits.amount < 2) {
+      toast({
+        title: "Insufficient Credits",
+        description: "You need at least 2 credits to send a message. Please add more credits to continue chatting.",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    const userMessage: ChatMessageType = {
+      id: Date.now().toString(),
+      text: inputMessage,
+      sender: 'user',
+      timestamp: new Date()
     };
 
-    // Initialize chat with a small delay
-    const timer = setTimeout(initializeChat, 100);
+    setMessages(prev => [...prev, userMessage]);
+    const currentInput = inputMessage;
+    setInputMessage('');
+    setIsTyping(true);
 
-    return () => {
-      clearTimeout(timer);
-    };
-  }, [credits, deductCredits, toast]);
+    try {
+      // Deduct credits first
+      await deductCredits.mutateAsync({
+        amount: 2,
+        description: 'Chat message with Emma AI'
+      });
+
+      // Call the actual Emma n8n workflow
+      const responseText = await callEmmaWorkflow(currentInput);
+
+      const emmaMessage: ChatMessageType = {
+        id: Date.now().toString() + '-emma',
+        text: responseText,
+        sender: 'emma',
+        timestamp: new Date()
+      };
+      
+      setMessages(prev => [...prev, emmaMessage]);
+
+      toast({
+        title: "Message Sent",
+        description: `2 credits deducted. Remaining: ${(credits?.amount || 0) - 2}`,
+      });
+
+    } catch (error) {
+      console.error('Error processing message:', error);
+      const errorMessage: ChatMessageType = {
+        id: Date.now().toString() + '-error',
+        text: error instanceof Error ? error.message : "I'm having trouble processing your request right now. Please check your settings and try again.",
+        sender: 'emma',
+        timestamp: new Date()
+      };
+      setMessages(prev => [...prev, errorMessage]);
+
+      toast({
+        title: "Processing Error",
+        description: error instanceof Error ? error.message : "Unable to process your message. Please try again.",
+        variant: "destructive"
+      });
+    } finally {
+      setIsTyping(false);
+    }
+  };
+
+  const handleKeyPress = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      handleSendMessage();
+    }
+  };
 
   // Show loading state while credits are being fetched
-  if (isLoading) {
+  if (creditsLoading) {
     return (
       <div className="h-full bg-gray-50 flex items-center justify-center">
         <div className="text-gray-500">Loading chat...</div>
@@ -145,27 +203,75 @@ export function Emma() {
       <div className="p-6 h-full flex flex-col">
         {/* Header */}
         <div className="mb-6">
-          <div className="flex items-center space-x-3 mb-4">
-            <div className="w-12 h-12 bg-gradient-to-br from-purple-600 to-blue-600 rounded-xl flex items-center justify-center">
-              <Bot className="w-7 h-7 text-white" />
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center space-x-3">
+              <div className="w-12 h-12 bg-gradient-to-br from-purple-600 to-blue-600 rounded-xl flex items-center justify-center">
+                <Bot className="w-7 h-7 text-white" />
+              </div>
+              <div>
+                <h1 className="text-3xl font-bold text-gray-900">Emma AI</h1>
+                <p className="text-gray-600">Connected to your n8n workflow & Notion CRM</p>
+              </div>
             </div>
-            <div>
-              <h1 className="text-3xl font-bold text-gray-900">Emma</h1>
-              <p className="text-gray-600">Your AI-powered Notion Database Assistant</p>
-            </div>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setShowSettings(!showSettings)}
+              className="flex items-center space-x-2"
+            >
+              <Settings className="w-4 h-4" />
+              <span>Settings</span>
+            </Button>
           </div>
+
+          {/* Settings Panel */}
+          {showSettings && (
+            <Card className="mb-4 border-purple-200">
+              <CardHeader className="pb-3">
+                <CardTitle className="text-lg">Emma AI Configuration</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      n8n Webhook URL
+                    </label>
+                    <Input
+                      value={webhookUrl}
+                      onChange={(e) => setWebhookUrl(e.target.value)}
+                      placeholder="https://your-n8n-instance.com/webhook/6ae82887-977b-4033-9855-08a96f0cd896"
+                      className="w-full"
+                    />
+                    <p className="text-xs text-gray-500 mt-1">
+                      Enter your n8n webhook URL for the Emma AI workflow. The webhook ID from your workflow is: 6ae82887-977b-4033-9855-08a96f0cd896
+                    </p>
+                  </div>
+                  <div className="flex space-x-2">
+                    <Button onClick={saveWebhookUrl} className="bg-purple-600 hover:bg-purple-700">
+                      Save Settings
+                    </Button>
+                    <Button variant="outline" onClick={() => setShowSettings(false)}>
+                      Cancel
+                    </Button>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          )}
           
           <Card className="bg-gradient-to-r from-purple-50 to-blue-50 border-purple-200">
             <CardContent className="p-4">
               <div className="flex items-start space-x-3">
                 <MessageSquare className="w-5 h-5 text-purple-600 mt-0.5" />
                 <div>
-                  <h3 className="font-semibold text-purple-900 mb-1">What can Emma help you with?</h3>
+                  <h3 className="font-semibold text-purple-900 mb-1">Emma's Real-Time Capabilities</h3>
                   <ul className="text-sm text-purple-700 space-y-1">
-                    <li>• Search and manage your leads in Notion</li>
-                    <li>• Get insights about your sales pipeline</li>
-                    <li>• Answer questions about lead data and statistics</li>
-                    <li>• Help with lead management tasks</li>
+                    <li>• Access your Notion CRM database in real-time</li>
+                    <li>• Send emails through Gmail integration</li>
+                    <li>• Make calls and send SMS via Twilio</li>
+                    <li>• Send WhatsApp messages</li>
+                    <li>• Search the web with SerpAPI</li>
+                    <li>• Powered by Azure OpenAI for intelligent responses</li>
                   </ul>
                 </div>
               </div>
@@ -178,15 +284,69 @@ export function Emma() {
           <CardHeader className="pb-3">
             <CardTitle className="flex items-center text-lg">
               <MessageSquare className="w-5 h-5 mr-2 text-purple-600" />
-              Chat with Emma
+              Chat with Emma AI
+              {webhookUrl ? (
+                <span className="ml-2 px-2 py-1 text-xs bg-green-100 text-green-800 rounded-full">
+                  Connected
+                </span>
+              ) : (
+                <span className="ml-2 px-2 py-1 text-xs bg-orange-100 text-orange-800 rounded-full">
+                  Setup Required
+                </span>
+              )}
             </CardTitle>
           </CardHeader>
-          <CardContent className="flex-1 p-4">
-            <div 
-              ref={chatContainerRef}
-              className="h-full w-full rounded-lg border bg-white"
-              style={{ minHeight: '500px' }}
-            />
+          <CardContent className="flex-1 p-0 flex flex-col">
+            {/* Messages Area */}
+            <div className="flex-1 p-4 overflow-y-auto space-y-4" style={{ minHeight: '400px', maxHeight: '500px' }}>
+              {messages.map((message) => (
+                <ChatMessage
+                  key={message.id}
+                  message={message.text}
+                  isUser={message.sender === 'user'}
+                  timestamp={message.timestamp.toISOString()}
+                />
+              ))}
+              
+              {isTyping && (
+                <div className="flex justify-start">
+                  <div className="bg-gray-100 text-gray-900 p-3 rounded-lg mr-12">
+                    <div className="flex space-x-1">
+                      <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"></div>
+                      <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
+                      <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
+                    </div>
+                  </div>
+                </div>
+              )}
+              
+              <div ref={messagesEndRef} />
+            </div>
+
+            {/* Input Area */}
+            <div className="border-t bg-white p-4">
+              <div className="flex space-x-2">
+                <Input
+                  value={inputMessage}
+                  onChange={(e) => setInputMessage(e.target.value)}
+                  onKeyPress={handleKeyPress}
+                  placeholder={webhookUrl ? "Ask Emma about your leads, send emails, or get insights..." : "Configure webhook URL in settings to start chatting..."}
+                  disabled={isTyping}
+                  className="flex-1"
+                />
+                <Button
+                  onClick={handleSendMessage}
+                  disabled={isTyping || !inputMessage.trim()}
+                  className="bg-purple-600 hover:bg-purple-700"
+                >
+                  <Send className="w-4 h-4" />
+                </Button>
+              </div>
+              <p className="text-xs text-gray-500 mt-2">
+                Each message costs 2 credits. You have {credits?.amount || 0} credits remaining.
+                {!webhookUrl && " Configure webhook URL in settings to start chatting."}
+              </p>
+            </div>
           </CardContent>
         </Card>
       </div>
