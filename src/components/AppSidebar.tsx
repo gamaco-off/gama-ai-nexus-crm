@@ -23,7 +23,6 @@ const menuItems = [
   // { id: "pricing", label: "Pricing", icon: Tag },
   { id: "settings", label: "Settings", icon: Settings },
 ];
-
 export function AppSidebar({ activeTab, onTabChange, onProfileClick }: AppSidebarProps) {
   return (
     <Sidebar>
