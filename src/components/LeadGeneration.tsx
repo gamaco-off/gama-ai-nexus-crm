@@ -41,7 +41,7 @@ export function LeadGeneration() {
     setLeads([]);
 
     try {
-      const response = await fetch("https://n8n.gama-app.com/webhook/cbf9d1be-bc21-43a9-896f-b542e5d03e4f", {
+      const response = await fetch("https://n8n.gama-app.com/webhook/leadgen-chat-1", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(form),
