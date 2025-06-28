@@ -11,13 +11,13 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 
 export function LeadGeneration() {
   const [form, setForm] = useState({
-    industry: "",
-    location: "",
+    industry: "SAAS",
+    location: "India",
     number_of_leads: 10,
     company_size: "Any Size",
     revenue_range: "Any Revenue",
-    job_titles: "",
-    business_type: "Any",
+    job_titles: "CEO",
+    business_type: "B2B",
   });
 
   const [result, setResult] = useState<string | null>(null);
