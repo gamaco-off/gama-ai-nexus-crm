@@ -49,9 +49,18 @@ export function LeadGeneration() {
 
       const data = await response.json();
 
-      if (!response.ok || !data.success) {
-        throw new Error("Error from workflow: " + (data.error || "Unknown error"));
-      }
+      if (!response.ok) {
+  throw new Error("Network or webhook failure");
+}
+
+if (!data.success) {
+  if (data.message?.includes("No verified leads")) {
+    setResult(data.message);
+    return; // Don't throw, just show the info
+  }
+
+  throw new Error("Error from workflow: " + (data.error || "Unknown error"));
+}
 
       setResult("✅ Lead generation successful");
       setLeads(data.leads || []);
