@@ -41,7 +41,7 @@ export function LeadGeneration() {
     setLeads([]);
 
     try {
-      const response = await fetch("https://n8n.gama-app.com/webhook/leadgen-chat-1", {
+      const response = await fetch("https://n8n.gama-app.com/webhook/leadgen-chat-1-new", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(form),
@@ -98,48 +98,6 @@ if (!data.success) {
           <div className="space-y-1">
             <Label htmlFor="number_of_leads">Number of Leads</Label>
             <Input id="number_of_leads" name="number_of_leads" type="number" value={form.number_of_leads} onChange={handleChange} />
-          </div>
-
-          {/* COMPANY SIZE */}
-          <div className="space-y-1">
-            <Label>Company Size</Label>
-            <Select value={form.company_size} onValueChange={(value) => handleSelectChange("company_size", value)}>
-              <SelectTrigger>
-                <SelectValue placeholder="Select company size" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="Startup (1-10 employees)">Startup (1-10 employees)</SelectItem>
-                <SelectItem value="Small (11-50 employees)">Small (11-50 employees)</SelectItem>
-                <SelectItem value="Medium (51-200 employees)">Medium (51-200 employees)</SelectItem>
-                <SelectItem value="Large (201-1000 employees)">Large (201-1000 employees)</SelectItem>
-                <SelectItem value="Enterprise (1000+ employees)">Enterprise (1000+ employees)</SelectItem>
-                <SelectItem value="Any Size">Any Size</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-
-          {/* REVENUE RANGE */}
-          <div className="space-y-1">
-            <Label>Revenue Range</Label>
-            <Select value={form.revenue_range} onValueChange={(value) => handleSelectChange("revenue_range", value)}>
-              <SelectTrigger>
-                <SelectValue placeholder="Select revenue range" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="Under $1M">Under $1M</SelectItem>
-                <SelectItem value="$1M - $10M">$1M - $10M</SelectItem>
-                <SelectItem value="$10M - $50M">$10M - $50M</SelectItem>
-                <SelectItem value="$50M - $100M">$50M - $100M</SelectItem>
-                <SelectItem value="$100M+">$100M+</SelectItem>
-                <SelectItem value="Any Revenue">Any Revenue</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-
-          {/* JOB TITLES */}
-          <div className="space-y-1">
-            <Label htmlFor="job_titles">Target Job Titles</Label>
-            <Textarea id="job_titles" name="job_titles" placeholder="e.g. CEO, CTO, Marketing Director" value={form.job_titles} onChange={handleChange} />
           </div>
 
           {/* BUSINESS TYPE */}
