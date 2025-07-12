@@ -49,7 +49,9 @@ export function Emma() {
       setWebhookUrl(savedWebhookUrl);
     } else {
       // Show settings by default if no webhook URL is configured
-      setShowSettings(true);
+      // Set default webhook URL
+      setWebhookUrl('https://n8n.gama-app.com/webhook/3a0013dc-a769-467a-9748-709a74ee8637/chat');
+      localStorage.setItem('emma-webhook-url', 'https://n8n.gama-app.com/webhook/3a0013dc-a769-467a-9748-709a74ee8637/chat');
     }
   }, []);
 
@@ -241,11 +243,11 @@ export function Emma() {
                     <Input
                       value={webhookUrl}
                       onChange={(e) => setWebhookUrl(e.target.value)}
-                      placeholder="https://your-n8n-instance.com/webhook/6ae82887-977b-4033-9855-08a96f0cd896"
+                      placeholder="https://n8n.gama-app.com/webhook/3a0013dc-a769-467a-9748-709a74ee8637/chat"
                       className="w-full"
                     />
                     <p className="text-xs text-gray-500 mt-1">
-                      Enter your n8n webhook URL for the Emma AI workflow. The webhook ID from your workflow is: 6ae82887-977b-4033-9855-08a96f0cd896
+                      Enter your n8n webhook URL for the Emma AI workflow. The webhook ID from your workflow is: 3a0013dc-a769-467a-9748-709a74ee8637
                     </p>
                   </div>
                   <div className="flex space-x-2">
