@@ -41,32 +41,64 @@ export function LeadGeneration() {
     setLeads([]);
 
     try {
+      console.log('Sending request to n8n webhook with data:', form);
+      
       const response = await fetch("https://n8n.gama-app.com/webhook/fe88e087-dbff-4655-95cf-c1247b5eb996", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(form),
       });
 
-      const data = await response.json();
+      console.log('Response status:', response.status);
+      console.log('Response headers:', response.headers);
+      
+      // First get the response as text to see what we're actually receiving
+      const responseText = await response.text();
+      console.log('Raw response text:', responseText);
+      
+      let data;
+      try {
+        data = JSON.parse(responseText);
+        console.log('Parsed response data:', data);
+      } catch (parseError) {
+        console.error('Failed to parse JSON response:', parseError);
+        // If it's not JSON, treat the text response as a success message
+        setResult(`✅ ${responseText}`);
+        setLoading(false);
+        return;
+      }
 
       if (!response.ok) {
-  throw new Error("Network or webhook failure");
-}
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      }
 
-if (!data.success) {
-  if (data.message?.includes("No verified leads")) {
-    setResult(data.message);
-    return; // Don't throw, just show the info
-  }
+      // Handle different response formats
+      if (typeof data === 'string') {
+        setResult(`✅ ${data}`);
+      } else if (data.success === false) {
+        if (data.message?.includes("No verified leads")) {
+          setResult(data.message);
+          return;
+        }
+        throw new Error("Error from workflow: " + (data.error || data.message || "Unknown error"));
+      } else if (data.leads && Array.isArray(data.leads)) {
+        setResult("✅ Lead generation successful");
+        setLeads(data.leads);
+      } else if (Array.isArray(data)) {
+        // If the response is directly an array of leads
+        setResult("✅ Lead generation successful");
+        setLeads(data);
+      } else {
+        // For any other successful response
+        setResult("✅ Lead generation completed");
+        if (data.message) {
+          setResult(`✅ ${data.message}`);
+        }
+      }
 
-  throw new Error("Error from workflow: " + (data.error || "Unknown error"));
-}
-
-      setResult("✅ Lead generation successful");
-      setLeads(data.leads || []);
     } catch (err: any) {
-      console.error(err);
-      setError("❌ Failed to generate leads.");
+      console.error('Lead generation error:', err);
+      setError(`❌ Failed to generate leads: ${err.message}`);
     } finally {
       setLoading(false);
     }
