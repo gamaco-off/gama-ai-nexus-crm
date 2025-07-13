@@ -41,7 +41,7 @@ export function LeadGeneration() {
     setLeads([]);
 
     try {
-      const response = await fetch("https://n8n.gama-app.com/webhook/holayoo", {
+      const response = await fetch("https://n8n.gama-app.com/webhook/fe88e087-dbff-4655-95cf-c1247b5eb996", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(form),
