@@ -81,6 +81,34 @@ export function LeadGeneration() {
           return;
         }
         throw new Error("Error from workflow: " + (data.error || data.message || "Unknown error"));
+      } else if (Array.isArray(data) && data.length > 0 && data[0].output) {
+        // Handle n8n workflow response format: [{ "output": "JSON string" }]
+        try {
+          const outputText = data[0].output;
+          console.log('N8N output text:', outputText);
+          
+          // Extract JSON from the output text (it's wrapped in ```json ... ```)
+          const jsonMatch = outputText.match(/```json\s*([\s\S]*?)\s*```/);
+          if (jsonMatch) {
+            const jsonString = jsonMatch[1];
+            console.log('Extracted JSON string:', jsonString);
+            const parsedLeads = JSON.parse(jsonString);
+            console.log('Parsed leads:', parsedLeads);
+            
+            if (Array.isArray(parsedLeads) && parsedLeads.length > 0) {
+              setResult("✅ Lead generation successful");
+              setLeads(parsedLeads);
+            } else {
+              setResult("✅ Lead generation completed, but no leads found");
+            }
+          } else {
+            // If no JSON block found, just show the output text
+            setResult(`✅ ${outputText}`);
+          }
+        } catch (parseError) {
+          console.error('Error parsing n8n output:', parseError);
+          setResult(`✅ Lead generation completed: ${data[0].output}`);
+        }
       } else if (data.leads && Array.isArray(data.leads)) {
         setResult("✅ Lead generation successful");
         setLeads(data.leads);
