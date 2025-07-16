@@ -5,6 +5,7 @@ import { AppSidebar } from "@/components/AppSidebar";
 import { Dashboard } from "@/components/Dashboard";
 import { Emma } from "@/components/Emma";
 import { LeadGeneration } from "@/components/LeadGeneration";
+import { VoiceAIAgent } from "@/components/VoiceAIAgent";
 import { PricingPage } from "@/components/Pricing";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
@@ -47,6 +48,8 @@ const Index = () => {
         return <LeadGeneration />;
       case "emma":
         return <Emma />;
+      case "voice":
+        return <VoiceAIAgent />;
       case "pricing":
         return <PricingPage />;
       default:
@@ -67,7 +70,7 @@ const Index = () => {
           <div className="sticky top-0 z-10 bg-white border-b border-gray-200 p-4">
             <div className="flex items-center justify-between">
               <h2 className="text-xl font-semibold text-gray-900 capitalize">
-                {activeTab === "emma" ? "Emma AI" : activeTab}
+                {activeTab === "emma" ? "Emma AI" : activeTab === "voice" ? "Voice AI Agent" : activeTab}
               </h2>
               <div className="flex items-center space-x-4">
                 <CreditsDisplay />

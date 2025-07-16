@@ -1,4 +1,4 @@
-import { Bot, Home, Users, Settings, Tag, User } from "lucide-react";
+import { Bot, Home, Users, Settings, Tag, User, MessageSquare } from "lucide-react";
 import {
   Sidebar,
   SidebarContent,
@@ -20,6 +20,7 @@ const menuItems = [
   { id: "home", label: "Dashboard", icon: Home },
   { id: "leadgen", label: "Lead Generation", icon: Users },
   { id: "emma", label: "Emma AI", icon: Bot },
+  { id: "voice", label: "Voice AI Agent", icon: MessageSquare },
 ];
 export function AppSidebar({ activeTab, onTabChange, onProfileClick }: AppSidebarProps) {
   return (
