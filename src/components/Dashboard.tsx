@@ -1,7 +1,10 @@
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import { Plus, Play, RefreshCw, Loader2 } from "lucide-react";
+import { Plus, Play, RefreshCw, Loader2, Settings } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { StatsGrid } from "./dashboard/StatsGrid";
 import { ActivityFeed } from "./dashboard/ActivityFeed";
 import { QuickInsights } from "./dashboard/QuickInsights";
@@ -38,6 +41,11 @@ export function Dashboard() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [showAddLeadForm, setShowAddLeadForm] = useState(false);
+  const [showSettings, setShowSettings] = useState(false);
+  const [webhookUrl, setWebhookUrl] = useState(() => {
+    return localStorage.getItem('dashboard-webhook-url') || 'https://n8n.srv792766.hstgr.cloud/webhook/944ee763-6f73-4ced-b914-a6e5ffc5565f';
+  });
+  const [tempWebhookUrl, setTempWebhookUrl] = useState(webhookUrl);
   const { toast } = useToast();
   const { profile, loading, session, user } = useAuth();
 
@@ -46,7 +54,7 @@ export function Dashboard() {
     setError(null);
     
     try {
-      const response = await fetch('https://n8n.srv792766.hstgr.cloud/webhook/944ee763-6f73-4ced-b914-a6e5ffc5565f', {
+      const response = await fetch(webhookUrl, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -70,14 +78,15 @@ export function Dashboard() {
       
     } catch (error) {
       console.error('Error fetching dashboard data:', error);
-      setError('Failed to load dashboard data');
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
+      setError(`Failed to load dashboard data: ${errorMessage}`);
       
       // Use fallback data on error
       setDashboardData(getFallbackDashboardData());
       
       toast({
         title: "Error",
-        description: "Failed to load live data. Showing sample data instead.",
+        description: `Failed to load live data: ${errorMessage}. Showing sample data instead.`,
         variant: "destructive",
       });
     } finally {
@@ -85,9 +94,20 @@ export function Dashboard() {
     }
   };
 
+  const handleSaveWebhookUrl = () => {
+    setWebhookUrl(tempWebhookUrl);
+    localStorage.setItem('dashboard-webhook-url', tempWebhookUrl);
+    setShowSettings(false);
+    toast({
+      title: "Settings Saved",
+      description: "Webhook URL has been updated successfully.",
+    });
+    // Refresh data with new URL
+    fetchDashboardData();
+  };
   useEffect(() => {
     fetchDashboardData();
-  }, []);
+  }, [webhookUrl]);
 
   const handleLeadAdded = () => {
     fetchDashboardData();
@@ -137,9 +157,55 @@ export function Dashboard() {
             <RefreshCw className="w-4 h-4 mr-2" />
             Refresh Data
           </Button>
+          <Dialog open={showSettings} onOpenChange={setShowSettings}>
+            <DialogTrigger asChild>
+              <Button variant="outline">
+                <Settings className="w-4 h-4 mr-2" />
+                Settings
+              </Button>
+            </DialogTrigger>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>Dashboard Settings</DialogTitle>
+              </DialogHeader>
+              <div className="space-y-4">
+                <div>
+                  <Label htmlFor="webhook-url">N8N Webhook URL</Label>
+                  <Input
+                    id="webhook-url"
+                    value={tempWebhookUrl}
+                    onChange={(e) => setTempWebhookUrl(e.target.value)}
+                    placeholder="Enter your n8n webhook URL"
+                    className="mt-1"
+                  />
+                  <p className="text-sm text-gray-500 mt-1">
+                    Current URL: {webhookUrl}
+                  </p>
+                </div>
+                <div className="flex justify-end space-x-2">
+                  <Button variant="outline" onClick={() => setShowSettings(false)}>
+                    Cancel
+                  </Button>
+                  <Button onClick={handleSaveWebhookUrl}>
+                    Save Settings
+                  </Button>
+                </div>
+              </div>
+            </DialogContent>
+          </Dialog>
         </div>
       </div>
 
+      {error && (
+        <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+          <p className="text-red-800 text-sm">
+            <strong>Error:</strong> {error}
+          </p>
+          <p className="text-red-600 text-xs mt-1">
+            Check the webhook URL in settings or ensure the n8n server is running and accessible.
+          </p>
+        </div>
+      )}
       {/* Add Lead Form Modal */}
       <AddLeadModal 
         isOpen={showAddLeadForm}
