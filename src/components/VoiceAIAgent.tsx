@@ -56,6 +56,10 @@ export function VoiceAIAgent() {
       recognitionRef.current.continuous = true;
       recognitionRef.current.interimResults = true;
       recognitionRef.current.lang = 'en-US';
+      
+      // Set additional properties to help with network issues
+      recognitionRef.current.maxAlternatives = 1;
+      recognitionRef.current.serviceURI = null; // Use default service
 
       recognitionRef.current.onresult = (event: any) => {
         let transcript = '';
@@ -71,15 +75,19 @@ export function VoiceAIAgent() {
         }
       };
 
-      recognitionRef.current.onerror = (event: any) => {
-        console.error('Speech recognition error:', event.error);
-        toast({
-          title: 'Speech Recognition Error',
-          description: `Error: ${event.error}`,
-          variant: 'destructive'
-        });
-        setIsListening(false);
+      recognitionRef.current.onstart = () => {
+        console.log('Speech recognition started');
       };
+      
+      recognitionRef.current.onspeechstart = () => {
+        console.log('Speech detected');
+      };
+      
+      recognitionRef.current.onspeechend = () => {
+        console.log('Speech ended');
+      };
+      
+      // Error handling is now done in startListening function
     }
 
     return () => {
@@ -100,11 +108,50 @@ export function VoiceAIAgent() {
     }
 
     try {
+      // Check if speech recognition is supported
+      if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
+        throw new Error('Speech recognition is not supported in this browser');
+      }
+
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       setIsListening(true);
       setCurrentTranscription('');
       
       if (recognitionRef.current) {
+        // Add additional error handling for network issues
+        recognitionRef.current.onerror = (event: any) => {
+          console.error('Speech recognition error:', event.error);
+          let errorMessage = 'Speech recognition failed';
+          
+          switch (event.error) {
+            case 'network':
+              errorMessage = 'Network error - please check your internet connection and try again';
+              break;
+            case 'not-allowed':
+              errorMessage = 'Microphone access denied - please allow microphone permissions';
+              break;
+            case 'no-speech':
+              errorMessage = 'No speech detected - please try speaking again';
+              break;
+            case 'audio-capture':
+              errorMessage = 'Audio capture failed - please check your microphone';
+              break;
+            case 'service-not-allowed':
+              errorMessage = 'Speech recognition service not allowed';
+              break;
+            default:
+              errorMessage = `Speech recognition error: ${event.error}`;
+          }
+          
+          toast({
+            title: 'Speech Recognition Error',
+            description: errorMessage,
+            variant: 'destructive'
+          });
+          setIsListening(false);
+          setCurrentTranscription('');
+        };
+        
         recognitionRef.current.start();
       }
 
@@ -119,11 +166,26 @@ export function VoiceAIAgent() {
       mediaRecorderRef.current.start();
     } catch (error) {
       console.error('Error accessing microphone:', error);
+      let errorMessage = 'Failed to start voice recognition';
+      
+      if (error instanceof Error) {
+        if (error.message.includes('not supported')) {
+          errorMessage = 'Speech recognition is not supported in this browser. Please use Chrome, Edge, or Safari.';
+        } else if (error.name === 'NotAllowedError') {
+          errorMessage = 'Microphone access denied. Please allow microphone permissions and try again.';
+        } else if (error.name === 'NotFoundError') {
+          errorMessage = 'No microphone found. Please connect a microphone and try again.';
+        } else {
+          errorMessage = `Error: ${error.message}`;
+        }
+      }
+      
       toast({
-        title: 'Microphone Access Error',
-        description: 'Please allow microphone access to use voice features.',
+        title: 'Voice Recognition Error',
+        description: errorMessage,
         variant: 'destructive'
       });
+      setIsListening(false);
     }
   };
 
@@ -406,6 +468,9 @@ export function VoiceAIAgent() {
               <div className="p-3 bg-yellow-50 rounded-lg border border-yellow-200">
                 <p className="text-xs text-yellow-800">
                   Each voice interaction costs 3 credits
+                </p>
+                <p className="text-xs text-yellow-700 mt-1">
+                  Requires internet connection for speech recognition
                 </p>
               </div>
             </CardContent>
