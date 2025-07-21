@@ -54,7 +54,7 @@ export function Emma() {
         .from('profiles')
         .select('emma_webhook_url')
         .eq('id', user.id)
-        .single();
+        .maybeSingle();
       
       if (error) {
         console.error('Error fetching Emma webhook URL:', error);

@@ -42,7 +42,7 @@ export function LeadGeneration() {
         .from('profiles')
         .select('leadgen_webhook_url')
         .eq('id', user.id)
-        .single();
+        .maybeSingle();
       
       if (error) {
         console.error('Error fetching webhook URL:', error);
