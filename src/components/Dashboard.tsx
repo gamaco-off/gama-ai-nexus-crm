@@ -46,7 +46,7 @@ export function Dashboard() {
     setError(null);
     
     try {
-      const response = await fetch('https://n8n.srv792766.hstgr.cloud/webhook/944ee763-6f73-4ced-b914-a6e5ffc5565f', {
+      const response = await fetch('https://n8n.gama-app.com/webhook/944ee763-6f73-4ced-b914-a6e5ffc5565f', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
