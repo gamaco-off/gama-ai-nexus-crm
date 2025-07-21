@@ -3,12 +3,14 @@
 
 import { useEffect, useRef, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Bot, MessageSquare, Send, Settings } from "lucide-react";
+import { Bot, MessageSquare, Send, Settings, AlertCircle } from "lucide-react";
 import { useCredits } from "@/hooks/useCredits";
 import { useToast } from "@/components/ui/use-toast";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ChatMessage } from "./ChatMessage";
+import { useAuth } from "@/contexts/AuthContext";
+import { supabase } from "@/integrations/supabase/client";
 
 interface ChatMessageType {
   id: string;
@@ -18,6 +20,7 @@ interface ChatMessageType {
 }
 
 export function Emma() {
+  const { user } = useAuth();
   const { credits, deductCredits, isLoading: creditsLoading } = useCredits();
   const { toast } = useToast();
   const [messages, setMessages] = useState<ChatMessageType[]>([
@@ -31,6 +34,7 @@ export function Emma() {
   const [inputMessage, setInputMessage] = useState('');
   const [isTyping, setIsTyping] = useState(false);
   const [webhookUrl, setWebhookUrl] = useState('');
+  const [tempWebhookUrl, setTempWebhookUrl] = useState('');
   const [showSettings, setShowSettings] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
@@ -43,33 +47,70 @@ export function Emma() {
   }, [messages]);
 
   useEffect(() => {
-    // Load webhook URL from localStorage
-    const savedWebhookUrl = localStorage.getItem('emma-webhook-url');
-    if (savedWebhookUrl) {
-      setWebhookUrl(savedWebhookUrl);
-    } else {
-      // Show settings by default if no webhook URL is configured
-      // Set default webhook URL
-      setWebhookUrl('https://n8n.gama-app.com/webhook/3a0013dc-a769-467a-9748-709a74ee8637/chat');
-      localStorage.setItem('emma-webhook-url', 'https://n8n.gama-app.com/webhook/3a0013dc-a769-467a-9748-709a74ee8637/chat');
-    }
-  }, []);
+    const fetchWebhookUrl = async () => {
+      if (!user) return;
+      
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('emma_webhook_url')
+        .eq('id', user.id)
+        .single();
+      
+      if (error) {
+        console.error('Error fetching Emma webhook URL:', error);
+        return;
+      }
+      
+      if (data?.emma_webhook_url) {
+        setWebhookUrl(data.emma_webhook_url);
+      }
+    };
+    
+    fetchWebhookUrl();
+  }, [user]);
 
-  const saveWebhookUrl = () => {
-    if (webhookUrl.trim()) {
-      localStorage.setItem('emma-webhook-url', webhookUrl.trim());
-      setShowSettings(false);
-      toast({
-        title: "Settings Saved",
-        description: "Emma is now connected to your n8n workflow!",
-      });
-    } else {
+  const saveWebhookUrl = async () => {
+    if (!user || !tempWebhookUrl.trim()) {
       toast({
         title: "Error",
         description: "Please enter a valid webhook URL",
         variant: "destructive"
       });
+      return;
     }
+
+    // Basic URL validation
+    try {
+      new URL(tempWebhookUrl);
+    } catch {
+      toast({
+        title: "Error",
+        description: "Please enter a valid URL",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    const { error } = await supabase
+      .from('profiles')
+      .update({ emma_webhook_url: tempWebhookUrl.trim() })
+      .eq('id', user.id);
+
+    if (error) {
+      toast({
+        title: "Error",
+        description: "Failed to save webhook URL",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    setWebhookUrl(tempWebhookUrl.trim());
+    setShowSettings(false);
+    toast({
+      title: "Settings Saved",
+      description: "Emma is now connected to your n8n workflow!",
+    });
   };
 
   const callEmmaWorkflow = async (message: string): Promise<string> => {
@@ -220,7 +261,10 @@ export function Emma() {
             <Button
               variant="outline"
               size="sm"
-              onClick={() => setShowSettings(!showSettings)}
+              onClick={() => {
+                setTempWebhookUrl(webhookUrl);
+                setShowSettings(!showSettings);
+              }}
               className="flex items-center space-x-2"
             >
               <Settings className="w-4 h-4" />
@@ -238,16 +282,16 @@ export function Emma() {
                 <div className="space-y-4">
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
-                      n8n Webhook URL
+                      Emma AI Webhook URL
                     </label>
                     <Input
-                      value={webhookUrl}
-                      onChange={(e) => setWebhookUrl(e.target.value)}
-                      placeholder="https://n8n.gama-app.com/webhook/3a0013dc-a769-467a-9748-709a74ee8637/chat"
+                      value={tempWebhookUrl}
+                      onChange={(e) => setTempWebhookUrl(e.target.value)}
+                      placeholder="https://your-n8n-instance.com/webhook/your-webhook-id/chat"
                       className="w-full"
                     />
                     <p className="text-xs text-gray-500 mt-1">
-                      Enter your n8n webhook URL for the Emma AI workflow. The webhook ID from your workflow is: 3a0013dc-a769-467a-9748-709a74ee8637
+                      Enter your n8n webhook URL for the Emma AI workflow
                     </p>
                   </div>
                   <div className="flex space-x-2">
@@ -257,6 +301,23 @@ export function Emma() {
                     <Button variant="outline" onClick={() => setShowSettings(false)}>
                       Cancel
                     </Button>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Warning if no webhook URL configured */}
+          {!webhookUrl && (
+            <Card className="bg-gradient-to-r from-orange-50 to-red-50 border-orange-200">
+              <CardContent className="p-4">
+                <div className="flex items-start space-x-3">
+                  <AlertCircle className="w-5 h-5 text-orange-600 mt-0.5" />
+                  <div>
+                    <h3 className="font-semibold text-orange-900 mb-1">Configuration Required</h3>
+                    <p className="text-sm text-orange-700">
+                      Please configure your n8n webhook URL to start chatting with Emma AI. Click "Settings" above to get started.
+                    </p>
                   </div>
                 </div>
               </CardContent>
@@ -335,12 +396,12 @@ export function Emma() {
                   onChange={(e) => setInputMessage(e.target.value)}
                   onKeyPress={handleKeyPress}
                   placeholder={webhookUrl ? "Ask Emma about your leads, send emails, or get insights..." : "Configure webhook URL in settings to start chatting..."}
-                  disabled={isTyping}
+                  disabled={isTyping || !webhookUrl}
                   className="flex-1"
                 />
                 <Button
                   onClick={handleSendMessage}
-                  disabled={isTyping || !inputMessage.trim()}
+                  disabled={isTyping || !inputMessage.trim() || !webhookUrl}
                   className="bg-purple-600 hover:bg-purple-700"
                 >
                   <Send className="w-4 h-4" />
@@ -348,7 +409,7 @@ export function Emma() {
               </div>
               <p className="text-xs text-gray-500 mt-2">
                 Each message costs 2 credits. You have {credits?.amount || 0} credits remaining.
-                {!webhookUrl && " Configure webhook URL in settings to start chatting."}
+                {!webhookUrl && " Configure webhook URL in settings first."}
               </p>
             </div>
           </CardContent>
