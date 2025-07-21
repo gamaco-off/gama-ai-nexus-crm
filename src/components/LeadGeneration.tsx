@@ -111,7 +111,15 @@ export function LeadGeneration() {
   };
 
   const handleSubmit = async () => {
+    setError(null);
+    setResult(null);
+    setLoading(true);
+    setLeads([]);
+
+    // Check if webhook URL is configured
     if (!webhookUrl) {
+      setError("❌ Please configure your n8n webhook URL first.");
+      setLoading(false);
       toast({
         title: "Configuration Required",
         description: "Please configure your n8n webhook URL first.",
@@ -120,11 +128,6 @@ export function LeadGeneration() {
       setShowSettings(true);
       return;
     }
-
-    setError(null);
-    setResult(null);
-    setLoading(true);
-    setLeads([]);
 
     try {
       console.log('Sending request to n8n webhook with data:', form);

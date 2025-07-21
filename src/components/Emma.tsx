@@ -150,17 +150,6 @@ export function Emma() {
   const handleSendMessage = async () => {
     if (!inputMessage.trim()) return;
 
-    // Check if webhook URL is configured
-    if (!webhookUrl.trim()) {
-      toast({
-        title: "Configuration Required",
-        description: "Please configure your n8n webhook URL in settings first.",
-        variant: "destructive"
-      });
-      setShowSettings(true);
-      return;
-    }
-
     // Check credits
     if (!credits || credits.amount < 2) {
       toast({
@@ -168,6 +157,17 @@ export function Emma() {
         description: "You need at least 2 credits to send a message. Please add more credits to continue chatting.",
         variant: "destructive"
       });
+      return;
+    }
+
+    // Check if webhook URL is configured
+    if (!webhookUrl.trim()) {
+      toast({
+        title: "Configuration Required", 
+        description: "Please configure your n8n webhook URL in settings first.",
+        variant: "destructive"
+      });
+      setShowSettings(true);
       return;
     }
 
