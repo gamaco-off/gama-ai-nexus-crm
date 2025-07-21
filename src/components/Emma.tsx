@@ -307,23 +307,6 @@ export function Emma() {
             </Card>
           )}
 
-          {/* Warning if no webhook URL configured */}
-          {!webhookUrl && (
-            <Card className="bg-gradient-to-r from-orange-50 to-red-50 border-orange-200">
-              <CardContent className="p-4">
-                <div className="flex items-start space-x-3">
-                  <AlertCircle className="w-5 h-5 text-orange-600 mt-0.5" />
-                  <div>
-                    <h3 className="font-semibold text-orange-900 mb-1">Configuration Required</h3>
-                    <p className="text-sm text-orange-700">
-                      Please configure your n8n webhook URL to start chatting with Emma AI. Click "Settings" above to get started.
-                    </p>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          )}
-
           <Card className="bg-gradient-to-r from-purple-50 to-blue-50 border-purple-200">
             <CardContent className="p-4">
               <div className="flex items-start space-x-3">
