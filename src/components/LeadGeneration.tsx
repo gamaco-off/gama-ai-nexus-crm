@@ -1,20 +1,17 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Loader2, Send, CheckCircle, Settings, AlertCircle } from "lucide-react";
+import { Loader2, Send, CheckCircle } from "lucide-react";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { useAuth } from "@/contexts/AuthContext";
-import { supabase } from "@/integrations/supabase/client";
-import { useToast } from "@/hooks/use-toast";
+import { useAuth } from '@/contexts/AuthContext';
 
 export function LeadGeneration() {
-  const { user } = useAuth();
-  const { toast } = useToast();
+  const { profile } = useAuth();
   const [form, setForm] = useState({
     industry: "SAAS",
     location: "India",
@@ -29,77 +26,8 @@ export function LeadGeneration() {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [leads, setLeads] = useState<any[]>([]);
-  const [webhookUrl, setWebhookUrl] = useState<string>('');
-  const [showSettings, setShowSettings] = useState(false);
-  const [tempWebhookUrl, setTempWebhookUrl] = useState<string>('');
 
-  // Fetch user's webhook URL on component mount
-  useEffect(() => {
-    const fetchWebhookUrl = async () => {
-      if (!user) return;
-      
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('leadgen_webhook_url')
-        .eq('id', user.id)
-        .maybeSingle();
-      
-      if (error) {
-        console.error('Error fetching webhook URL:', error);
-        return;
-      }
-      
-      if (data?.leadgen_webhook_url) {
-        setWebhookUrl(data.leadgen_webhook_url);
-      }
-    };
-    
-    fetchWebhookUrl();
-  }, [user]);
-
-  const saveWebhookUrl = async () => {
-    if (!user || !tempWebhookUrl.trim()) {
-      toast({
-        title: "Error",
-        description: "Please enter a valid webhook URL",
-        variant: "destructive"
-      });
-      return;
-    }
-
-    // Basic URL validation
-    try {
-      new URL(tempWebhookUrl);
-    } catch {
-      toast({
-        title: "Error",
-        description: "Please enter a valid URL",
-        variant: "destructive"
-      });
-      return;
-    }
-
-    const { error } = await supabase
-      .from('profiles')
-      .update({ leadgen_webhook_url: tempWebhookUrl.trim() })
-      .eq('id', user.id);
-
-    if (error) {
-      toast({
-        title: "Error",
-        description: "Failed to save webhook URL",
-        variant: "destructive"
-      });
-      return;
-    }
-
-    setWebhookUrl(tempWebhookUrl.trim());
-    setShowSettings(false);
-    toast({
-      title: "Success",
-      description: "Webhook URL saved successfully!",
-    });
-  };
+  const webhookUrl = profile?.leadgen_webhook;
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
@@ -116,106 +44,30 @@ export function LeadGeneration() {
     setLoading(true);
     setLeads([]);
 
-    // Check if webhook URL is configured
     if (!webhookUrl) {
-      setError("❌ Please configure your n8n webhook URL first.");
+      setError('❌ Webhook not assigned. Contact admin.');
       setLoading(false);
-      toast({
-        title: "Configuration Required",
-        description: "Please configure your n8n webhook URL first.",
-        variant: "destructive"
-      });
-      setShowSettings(true);
       return;
     }
 
     try {
-      console.log('Sending request to n8n webhook with data:', form);
-      
       const response = await fetch(webhookUrl, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(form),
       });
 
-      console.log('Response status:', response.status);
-      console.log('Response headers:', response.headers);
-      
-      // First get the response as text to see what we're actually receiving
-      const responseText = await response.text();
-      console.log('Raw response text:', responseText);
-      
-      let data;
-      try {
-        data = JSON.parse(responseText);
-        console.log('Parsed response data:', data);
-      } catch (parseError) {
-        console.error('Failed to parse JSON response:', parseError);
-        // If it's not JSON, treat the text response as a success message
-        setResult(`✅ ${responseText}`);
-        setLoading(false);
-        return;
+      const data = await response.json();
+
+      if (!response.ok || !data.success) {
+        throw new Error("Error from workflow: " + (data.error || "Unknown error"));
       }
 
-      if (!response.ok) {
-        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-      }
-
-      // Handle different response formats
-      if (typeof data === 'string') {
-        setResult(`✅ ${data}`);
-      } else if (data.success === false) {
-        if (data.message?.includes("No verified leads")) {
-          setResult(data.message);
-          return;
-        }
-        throw new Error("Error from workflow: " + (data.error || data.message || "Unknown error"));
-      } else if (Array.isArray(data) && data.length > 0 && data[0].output) {
-        // Handle n8n workflow response format: [{ "output": "JSON string" }]
-        try {
-          const outputText = data[0].output;
-          console.log('N8N output text:', outputText);
-          
-          // Extract JSON from the output text (it's wrapped in ```json ... ```)
-          const jsonMatch = outputText.match(/```json\s*([\s\S]*?)\s*```/);
-          if (jsonMatch) {
-            const jsonString = jsonMatch[1];
-            console.log('Extracted JSON string:', jsonString);
-            const parsedLeads = JSON.parse(jsonString);
-            console.log('Parsed leads:', parsedLeads);
-            
-            if (Array.isArray(parsedLeads) && parsedLeads.length > 0) {
-              setResult("✅ Lead generation successful");
-              setLeads(parsedLeads);
-            } else {
-              setResult("✅ Lead generation completed, but no leads found");
-            }
-          } else {
-            // If no JSON block found, just show the output text
-            setResult(`✅ ${outputText}`);
-          }
-        } catch (parseError) {
-          console.error('Error parsing n8n output:', parseError);
-          setResult(`✅ Lead generation completed: ${data[0].output}`);
-        }
-      } else if (data.leads && Array.isArray(data.leads)) {
-        setResult("✅ Lead generation successful");
-        setLeads(data.leads);
-      } else if (Array.isArray(data)) {
-        // If the response is directly an array of leads
-        setResult("✅ Lead generation successful");
-        setLeads(data);
-      } else {
-        // For any other successful response
-        setResult("✅ Lead generation completed");
-        if (data.message) {
-          setResult(`✅ ${data.message}`);
-        }
-      }
-
+      setResult("✅ Lead generation successful");
+      setLeads(data.leads || []);
     } catch (err: any) {
-      console.error('Lead generation error:', err);
-      setError(`❌ Failed to generate leads: ${err.message}`);
+      console.error(err);
+      setError("❌ Failed to generate leads.");
     } finally {
       setLoading(false);
     }
@@ -223,64 +75,6 @@ export function LeadGeneration() {
 
   return (
     <div className="p-6 max-w-3xl mx-auto space-y-6">
-      {/* Header with Settings */}
-      <div className="flex items-center justify-between mb-6">
-        <div>
-          <h1 className="text-3xl font-bold text-gray-900">AI Lead Generation</h1>
-          <p className="text-gray-600">Generate leads using your custom n8n workflow</p>
-        </div>
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={() => {
-            setTempWebhookUrl(webhookUrl);
-            setShowSettings(!showSettings);
-          }}
-          className="flex items-center space-x-2"
-        >
-          <Settings className="w-4 h-4" />
-          <span>Configure Webhook</span>
-        </Button>
-      </div>
-
-      {/* Webhook Configuration Panel */}
-      {showSettings && (
-        <Card className="border-blue-200 bg-blue-50">
-          <CardHeader className="pb-3">
-            <CardTitle className="text-lg flex items-center">
-              <Settings className="w-5 h-5 mr-2" />
-              n8n Webhook Configuration
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              <div>
-                <Label className="block text-sm font-medium text-gray-700 mb-2">
-                  Lead Generation Webhook URL
-                </Label>
-                <Input
-                  value={tempWebhookUrl}
-                  onChange={(e) => setTempWebhookUrl(e.target.value)}
-                  placeholder="https://your-n8n-instance.com/webhook/your-webhook-id"
-                  className="w-full"
-                />
-                <p className="text-xs text-gray-500 mt-1">
-                  Enter your n8n webhook URL for the Lead Generation workflow
-                </p>
-              </div>
-              <div className="flex space-x-2">
-                <Button onClick={saveWebhookUrl} className="bg-blue-600 hover:bg-blue-700">
-                  Save Configuration
-                </Button>
-                <Button variant="outline" onClick={() => setShowSettings(false)}>
-                  Cancel
-                </Button>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      )}
-
       <Card>
         <CardHeader>
           <CardTitle className="text-xl flex items-center gap-2">

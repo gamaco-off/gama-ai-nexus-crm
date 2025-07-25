@@ -29,15 +29,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [profile, setProfile] = useState<any>(null);
 
   const refreshProfile = async () => {
-    if (user) {
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('id, credits')
-        .eq('id', user.id)
-        .single();
-      console.log('Fetched profile:', data, 'Error:', error, 'User:', user);
-      setProfile(data);
+    if (!user) {
+      setProfile(null);
+      return;
     }
+    const { data, error } = await supabase
+      .from('profiles')
+      .select('id, credits, role, leadgen_webhook, emma_webhook')
+      .eq('id', user.id)
+      .single();
+    setProfile(data);
   };
 
   useEffect(() => {
@@ -46,14 +47,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       async (event, session) => {
         setSession(session);
         setUser(session?.user ?? null);
-        
-        if (session?.user) {
-          setTimeout(() => {
-            refreshProfile();
-          }, 0);
-        } else {
-          setProfile(null);
-        }
         setLoading(false);
       }
     );
@@ -62,32 +55,25 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
       setUser(session?.user ?? null);
-      if (session?.user) {
-        console.log('Session user:', session.user);
-        refreshProfile();
-      }
       setLoading(false);
     });
 
     return () => subscription.unsubscribe();
   }, []);
 
+  // Fetch profile when user changes
+  useEffect(() => {
+    if (user) {
+      refreshProfile();
+    } else {
+      setProfile(null);
+    }
+  }, [user]);
+
   const signUp = async (email: string, password: string, fullName: string) => {
     try {
-      // First try to sign in with the email to check if it exists
-      const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
-        email,
-        password: 'dummy-password-for-check'
-      });
-
-      // If we get a specific error about invalid credentials, it means the email exists
-      if (signInError?.message?.includes('Invalid login credentials')) {
-        return { error: { message: 'Email already exists' } };
-      }
-
-      // If we get here, the email doesn't exist, so proceed with signup
       const redirectUrl = `${window.location.origin}/`;
-      const { error } = await supabase.auth.signUp({
+      const { error: signUpError } = await supabase.auth.signUp({
         email,
         password,
         options: {
@@ -97,7 +83,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           }
         }
       });
-      return { error };
+      if (signUpError) {
+        if (signUpError.message.includes('User already registered')) {
+          return { error: { message: 'Email already exists' } };
+        }
+        return { error: signUpError };
+      }
+      return { error: null };
     } catch (error) {
       return { error };
     }

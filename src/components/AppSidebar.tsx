@@ -9,6 +9,7 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
 } from "@/components/ui/sidebar";
+import { useAuth } from '@/contexts/AuthContext';
 
 interface AppSidebarProps {
   activeTab: string;
@@ -20,8 +21,12 @@ const menuItems = [
   { id: "home", label: "Dashboard", icon: Home },
   { id: "leadgen", label: "Lead Generation", icon: Users },
   { id: "emma", label: "Emma AI", icon: Bot },
+  // { id: "pricing", label: "Pricing", icon: Tag },
+  { id: "settings", label: "Settings", icon: Settings },
 ];
+
 export function AppSidebar({ activeTab, onTabChange, onProfileClick }: AppSidebarProps) {
+  const { profile } = useAuth();
   return (
     <Sidebar>
       <SidebarContent>
@@ -51,6 +56,19 @@ export function AppSidebar({ activeTab, onTabChange, onProfileClick }: AppSideba
                   </SidebarMenuButton>
                 </SidebarMenuItem>
               ))}
+              {/* Admin Control option only for admin users */}
+              {profile?.role === 'admin' && (
+                <SidebarMenuItem key="admin">
+                  <SidebarMenuButton
+                    onClick={() => onTabChange('admin')}
+                    isActive={activeTab === 'admin'}
+                    className="w-full justify-start text-red-700"
+                  >
+                    <Settings className="mr-2 h-4 w-4" />
+                    Admin Control
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              )}
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
