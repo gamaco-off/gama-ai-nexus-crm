@@ -4,6 +4,7 @@ import { SidebarProvider } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/AppSidebar";
 import { Dashboard } from "@/components/Dashboard";
 import { Emma } from "@/components/Emma";
+import { Settings } from "@/components/Settings";
 import { LeadGeneration } from "@/components/LeadGeneration";
 import { PricingPage } from "@/components/Pricing";
 import { useAuth } from "@/contexts/AuthContext";
@@ -11,6 +12,7 @@ import { Button } from "@/components/ui/button";
 import { CreditsDisplay } from "@/components/CreditsDisplay";
 import { LogOut } from "lucide-react";
 import { ProfileSheet } from "@/components/ProfileSheet";
+import AdminPanel from "@/components/AdminPanel";
 
 const Index = () => {
   const [activeTab, setActiveTab] = useState("home");
@@ -49,6 +51,10 @@ const Index = () => {
         return <Emma />;
       case "pricing":
         return <PricingPage />;
+      case "settings":
+        return <Settings />;
+      case "admin":
+        return <AdminPanel />;
       default:
         return <Dashboard />;
     }

@@ -68,6 +68,18 @@ export const ProfileSheet: React.FC<ProfileSheetProps> = ({ open, onOpenChange }
             <Input value={email} disabled />
           </div>
           <div>
+            <label className="block text-sm font-medium mb-1">Leadgen Webhook</label>
+            <div className="px-3 py-2 bg-gray-100 rounded-md text-base text-gray-700 break-all">
+              {profile?.leadgen_webhook || <span className="text-gray-400">Not assigned</span>}
+            </div>
+          </div>
+          <div>
+            <label className="block text-sm font-medium mb-1">Emma Webhook</label>
+            <div className="px-3 py-2 bg-gray-100 rounded-md text-base text-gray-700 break-all">
+              {profile?.emma_webhook || <span className="text-gray-400">Not assigned</span>}
+            </div>
+          </div>
+          <div>
             <label className="block text-sm font-medium mb-1">New Password</label>
             <Input
               type="password"
